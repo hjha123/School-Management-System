@@ -14,6 +14,18 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex, WebRequest request) {
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Runtime Error",
+                "message", ex.getMessage(),
+                "path", request.getDescription(false).replace("uri=", "")
+        );
+
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
     @ExceptionHandler(AppRuntimeException.class)
     public ResponseEntity<ErrorDetails> handleTodoAPIException(AppRuntimeException appRuntimeException,
                                                                WebRequest webRequest){
