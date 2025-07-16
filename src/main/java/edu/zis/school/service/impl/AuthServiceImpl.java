@@ -18,12 +18,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class AuthServiceImpl implements AuthService {
+    private static final String DEFAULT_ROLE = "STUDENT";
+    private static final Set<String> ALLOWED_SIGNUP_ROLES = Set.of("STUDENT", "PARENT");
 
     private UserRepository userRepository;
     private RoleRepository roleRepository;
@@ -53,17 +54,24 @@ public class AuthServiceImpl implements AuthService {
             throw new AppRuntimeException(HttpStatus.BAD_REQUEST, "User already exists by given email id : " + registerDto.getEmail());
         }
 
+        // 1. Determine the role that will actually be saved
+        String roleName = (registerDto.getRole() == null || registerDto.getRole().isBlank())
+                ? DEFAULT_ROLE
+                : registerDto.getRole().toUpperCase();
+
+        // 2. Whitelist check — prevents someone from self‑registering as ADMIN
+        if (!ALLOWED_SIGNUP_ROLES.contains(roleName))
+            throw new RuntimeException("Role not allowed for self‑registration");
+
         User user = new User();
         user.setName(registerDto.getName());
         user.setUsername(registerDto.getUsername());
         user.setEmail(registerDto.getEmail());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
-        Set<Role> roles = new HashSet<>();
-        Role userRole = roleRepository.findByName("ADMIN");
-        roles.add(userRole);
+        Role userRole = roleRepository.findByName(roleName).orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
 
-        user.setRoles(roles);
+        user.setRole(userRole);
 
         userRepository.save(user);
 
@@ -84,14 +92,8 @@ public class AuthServiceImpl implements AuthService {
         String userRole = "";
         if(optionalUser.isPresent()){
             User user = optionalUser.get();
-            Set<Role> roles = user.getRoles();
-
-            Optional<Role> optionalRole = roles.stream().findFirst();
-
-            if(optionalRole.isPresent()){
-                Role role = optionalRole.get();
-                userRole = role.getName();
-            }
+            Role role = user.getRole();
+            userRole = role.getName();
         }
 
         JWTAuthResponse jwtAuthResponse = new JWTAuthResponse();

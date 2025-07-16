@@ -45,6 +45,7 @@ public class SpringSecurityConfiguration {
                     authorize.requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN");
                     authorize.requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "USER");
                     authorize.requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("ADMIN", "USER");*/
+                    authorize.requestMatchers("/admin/**").hasRole("ADMIN");
                     authorize.requestMatchers("/api/auth/**").permitAll();
                     authorize.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     authorize.anyRequest().authenticated();
@@ -68,21 +69,5 @@ public class SpringSecurityConfiguration {
         return configuration.getAuthenticationManager();
     }
 
-    /*@Bean
-    UserDetailsService userDetailsService(){
-        UserDetails user = User.builder()
-                .username("himalaya")
-                .password(passwordEncoder().encode("password"))
-                .roles("USER")
-                .build();
-
-        UserDetails admin = User.builder()
-                .username("admin")
-                .password(passwordEncoder().encode("admin"))
-                .roles("ADMIN")
-                .build();
-
-        return new InMemoryUserDetailsManager(user, admin);
-    }*/
 }
 
