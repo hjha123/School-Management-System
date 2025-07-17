@@ -40,6 +40,14 @@ public class SpringSecurityConfiguration {
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf((csrf) -> csrf.disable())
                 .authorizeHttpRequests((authorize) -> {
+                    authorize.requestMatchers(
+                            "/api/auth/**",
+                            "/swagger-ui.html",
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/swagger-resources/**",
+                            "/webjars/**"
+                    ).permitAll();
                    /* authorize.requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN");
                     authorize.requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN");
                     authorize.requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN");

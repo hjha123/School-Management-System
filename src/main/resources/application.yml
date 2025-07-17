@@ -26,3 +26,7 @@ logging:
 app:
   jwt-secret: efb4c2bcdf2ad82a8318f4985bedf1ec10a722f0822d5f5c26520e53cb65c279
   jwt-expiration-milliseconds: 604800000   # 7 days
+#spring-doc:
+#  swagger-ui:
+#    path: /swagger-ui.html
+
