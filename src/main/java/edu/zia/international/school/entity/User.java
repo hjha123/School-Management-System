@@ -42,4 +42,16 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "updated_date")
     private Date updatedDate;
+
+    // 👇 Additional Fields for Reset Password
+    @Column(name = "password_reset_token")
+    private String passwordResetToken;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "password_reset_expiry")
+    private Date passwordResetExpiry;
+
+    @Column(name = "is_password_reset", nullable = false)
+    private boolean passwordReset = false;
+
 }
