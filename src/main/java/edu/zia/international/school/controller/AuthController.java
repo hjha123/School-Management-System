@@ -22,7 +22,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/register")
+    @PostMapping("/signup")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterDto registerDto){
         log.info("AuthController | Request received to register with username {} & email : {}", registerDto.getUsername(), registerDto.getEmail());
         return new ResponseEntity<>(authService.register(registerDto), HttpStatus.CREATED);

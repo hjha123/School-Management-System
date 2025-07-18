@@ -12,7 +12,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class RegisterDto {
     @NotBlank(message = "Name must not be blank")
-    private String name;
+    private String fullName;
     @NotBlank(message = "Username must not be blank")
     private String username;
     @NotBlank(message = "Email must not be blank")

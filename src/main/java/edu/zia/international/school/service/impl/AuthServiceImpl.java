@@ -64,7 +64,7 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Role not allowed for self‑registration");
 
         User user = new User();
-        user.setName(registerDto.getName());
+        user.setName(registerDto.getFullName());
         user.setUsername(registerDto.getUsername());
         user.setEmail(registerDto.getEmail());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
