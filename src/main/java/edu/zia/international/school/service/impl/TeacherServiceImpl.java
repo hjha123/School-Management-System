@@ -35,15 +35,15 @@ public class TeacherServiceImpl implements TeacherService {
 
     @Override
     public TeacherResponse createTeacher(CreateTeacherRequest request) {
-        log.info("Creating new teacher {} with email: {}",request.getFullName(), request.getEmail());
+        log.info("Creating new teacher {} with email: {}", request.getFullName(), request.getEmail());
 
         if (teacherRepository.existsByEmail(request.getEmail()) || userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists.");
         }
 
-        if (teacherRepository.existsByUsername(request.getUsername()) || userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists.");
-        }
+        // ✅ Generate unique username automatically (firstname.lastname)
+        String generatedUsername = generateUniqueUsername(request.getFullName());
+        log.info("Generated username for teacher: {}", generatedUsername);
 
         // 🔐 Generate temporary password
         String tempPassword = UUID.randomUUID().toString().substring(0, 8);
@@ -52,9 +52,10 @@ public class TeacherServiceImpl implements TeacherService {
         User user = new User();
         user.setName(request.getFullName());
         user.setEmail(request.getEmail());
-        user.setUsername(request.getUsername());
+        user.setUsername(generatedUsername);
         user.setPassword(passwordEncoder.encode(tempPassword));
-        user.setRole(roleRepository.findByName(ROLE_NAME).orElseThrow(() -> new ResourceNotFoundException("Role not found")));
+        user.setRole(roleRepository.findByName(ROLE_NAME)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
         userRepository.save(user);
         log.info("User created for teacher: {}", user.getId());
 
@@ -79,12 +80,11 @@ public class TeacherServiceImpl implements TeacherService {
             }
         }
 
-
         // 🧑‍🏫 Create Teacher entity
         Teacher teacher = Teacher.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
-                .username(request.getUsername())
+                .username(generatedUsername)
                 .phone(request.getPhone())
                 .gender(request.getGender())
                 .dateOfBirth(request.getDateOfBirth())
@@ -95,22 +95,22 @@ public class TeacherServiceImpl implements TeacherService {
                 .user(user)
                 .role(ROLE_NAME)
                 .subjects(subjects)
-                .grade(grade)       // ✅ Set grade (can be null)
-                .section(section)   // ✅ Set section (can be null)
+                .grade(grade)       // ✅ Set grade (nullable)
+                .section(section)   // ✅ Set section (nullable)
                 .build();
 
         Teacher saved = teacherRepository.save(teacher);
         log.info("Teacher saved with ID: {}", saved.getId());
 
         // ✉️ TODO: Send email for password reset link (mock/log here)
-        log.info("Send reset link email to: {} with temp password: {}", request.getEmail(), tempPassword);
+        log.info("Send reset link email to: {} with user name {} & temp password: {}", request.getEmail(), generatedUsername, tempPassword);
 
         // 🔁 Prepare response
         TeacherResponse response = new TeacherResponse();
         response.setId(saved.getId());
         response.setFullName(saved.getFullName());
         response.setEmail(saved.getEmail());
-        response.setUsername(saved.getUsername());
+        response.setUsername(saved.getUsername()); // auto-generated
         response.setPhone(saved.getPhone());
         response.setSubjects(subjects.stream().map(Subject::getName).toList());
         response.setGender(saved.getGender());
@@ -120,7 +120,7 @@ public class TeacherServiceImpl implements TeacherService {
         response.setJoiningDate(saved.getJoiningDate());
         response.setExperienceYears(saved.getExperienceYears());
 
-        // ✅ Optional Grade & Section in response
+        // ✅ Include Grade & Section in response if set
         if (grade != null) response.setGradeName(grade.getName());
         if (section != null) response.setSectionName(section.getName());
 
@@ -249,5 +249,22 @@ public class TeacherServiceImpl implements TeacherService {
         // Delete teacher
         teacherRepository.delete(teacher);
         log.info("Teacher and associated User deleted successfully.");
+    }
+
+    private String generateUniqueUsername(String fullName) {
+        String[] names = fullName.trim().toLowerCase().split("\\s+");
+
+        String firstName = names[0];
+        String lastName = names.length > 1 ? names[names.length - 1] : "";
+        String baseUsername = firstName + "." + lastName;
+        String username = baseUsername;
+
+        int suffix = 1;
+        while (teacherRepository.existsByUsername(username) || userRepository.existsByUsername(username)) {
+            username = baseUsername + suffix;
+            suffix++;
+        }
+
+        return username;
     }
 }

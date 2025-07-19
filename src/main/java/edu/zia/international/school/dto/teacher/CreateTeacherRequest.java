@@ -17,10 +17,6 @@ public class CreateTeacherRequest {
     @Email(message = "Email should be valid")
     private String email;
 
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    private String username;
-
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be exactly 10 digits")
     private String phone;
@@ -29,7 +25,7 @@ public class CreateTeacherRequest {
     private List<Long> subjectIds;
 
     @NotBlank(message = "Gender is required")
-    @Pattern(regexp = "MALE|FEMALE|OTHER", message = "Gender must be MALE, FEMALE or OTHER")
+    @Pattern(regexp = "Male|Female|Other", message = "Gender must be Male, Female or Other")
     private String gender;
 
     @Past(message = "Date of birth must be in the past")
