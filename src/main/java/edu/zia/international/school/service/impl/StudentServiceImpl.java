@@ -1,6 +1,6 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.StudentDTO;
+import edu.zia.international.school.dto.student.StudentDTO;
 import edu.zia.international.school.entity.Student;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.repository.StudentRepository;

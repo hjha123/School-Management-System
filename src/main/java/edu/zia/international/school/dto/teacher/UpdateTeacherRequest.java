@@ -1,4 +1,4 @@
-package edu.zia.international.school.dto;
+package edu.zia.international.school.dto.teacher;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

@@ -1,9 +1,9 @@
 package edu.zia.international.school.service;
 
 
-import edu.zia.international.school.dto.JWTAuthResponse;
-import edu.zia.international.school.dto.LoginDto;
-import edu.zia.international.school.dto.RegisterDto;
+import edu.zia.international.school.dto.auth.JWTAuthResponse;
+import edu.zia.international.school.dto.auth.LoginDto;
+import edu.zia.international.school.dto.auth.RegisterDto;
 
 public interface AuthService {
 

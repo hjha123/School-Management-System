@@ -1,12 +1,12 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.JWTAuthResponse;
-import edu.zia.international.school.dto.ResetPasswordRequest;
+import edu.zia.international.school.dto.auth.JWTAuthResponse;
+import edu.zia.international.school.dto.auth.ResetPasswordRequest;
 import edu.zia.international.school.entity.User;
 import edu.zia.international.school.repository.UserRepository;
 import edu.zia.international.school.service.AuthService;
-import edu.zia.international.school.dto.LoginDto;
-import edu.zia.international.school.dto.RegisterDto;
+import edu.zia.international.school.dto.auth.LoginDto;
+import edu.zia.international.school.dto.auth.RegisterDto;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

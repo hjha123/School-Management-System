@@ -1,4 +1,4 @@
-package edu.zia.international.school.dto;
+package edu.zia.international.school.dto.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

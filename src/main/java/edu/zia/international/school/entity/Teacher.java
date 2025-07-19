@@ -19,12 +19,16 @@ public class Teacher {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Basic Info
     private String fullName;
 
+    @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false, unique = true)
     private String username;
 
+    @Column(length = 10, unique = true)
     private String phone;
 
     @Column(nullable = false)
@@ -36,12 +40,33 @@ public class Teacher {
 
     private String qualification;
 
+    @Column(length = 255)
     private String address;
 
     private LocalDate joiningDate;
 
     private Integer experienceYears;
 
+    // Optional Additional Fields
+    @Column(unique = true)
+    private String staffId;
+
+    private String maritalStatus;
+
+    private String emergencyContactInfo;
+
+    private String bloodGroup;
+
+    private String nationality;
+
+    @Column(unique = true)
+    private String aadharNumber;
+
+    private String profileImageUrl;
+
+    private String teacherType;  // FULL_TIME, PART_TIME, GUEST, VISITING
+
+    // Subjects
     @ManyToMany
     @JoinTable(
             name = "teacher_subjects",
@@ -49,6 +74,15 @@ public class Teacher {
             inverseJoinColumns = @JoinColumn(name = "subject_id")
     )
     private List<Subject> subjects;
+
+    // Optional Grade assignment
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grade_id")
+    private Grade grade;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "section_id")
+    private Section section;
 
     @OneToOne
     @JoinColumn(name = "user_id")

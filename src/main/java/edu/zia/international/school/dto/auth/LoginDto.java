@@ -1,4 +1,4 @@
-package edu.zia.international.school.dto;
+package edu.zia.international.school.dto.auth;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

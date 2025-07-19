@@ -1,13 +1,13 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.JWTAuthResponse;
+import edu.zia.international.school.dto.auth.JWTAuthResponse;
 import edu.zia.international.school.exception.AppRuntimeException;
 import edu.zia.international.school.repository.RoleRepository;
 import edu.zia.international.school.repository.UserRepository;
 import edu.zia.international.school.security.JWTTokenProvider;
 import edu.zia.international.school.service.AuthService;
-import edu.zia.international.school.dto.LoginDto;
-import edu.zia.international.school.dto.RegisterDto;
+import edu.zia.international.school.dto.auth.LoginDto;
+import edu.zia.international.school.dto.auth.RegisterDto;
 import edu.zia.international.school.entity.Role;
 import edu.zia.international.school.entity.User;
 import org.springframework.http.HttpStatus;

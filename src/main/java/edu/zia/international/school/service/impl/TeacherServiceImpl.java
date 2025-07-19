@@ -1,8 +1,8 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.CreateTeacherRequest;
-import edu.zia.international.school.dto.TeacherResponse;
-import edu.zia.international.school.dto.UpdateTeacherRequest;
+import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
+import edu.zia.international.school.dto.teacher.TeacherResponse;
+import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
 import edu.zia.international.school.entity.Subject;
 import edu.zia.international.school.entity.Teacher;
 import edu.zia.international.school.entity.User;

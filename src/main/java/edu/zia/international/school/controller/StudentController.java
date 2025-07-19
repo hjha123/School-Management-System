@@ -1,6 +1,6 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.StudentDTO;
+import edu.zia.international.school.dto.student.StudentDTO;
 import edu.zia.international.school.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

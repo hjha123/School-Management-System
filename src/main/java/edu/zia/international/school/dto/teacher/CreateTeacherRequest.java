@@ -1,4 +1,4 @@
-package edu.zia.international.school.dto;
+package edu.zia.international.school.dto.teacher;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -46,6 +46,22 @@ public class CreateTeacherRequest {
 
     @Min(value = 0, message = "Experience years cannot be negative")
     private Integer experienceYears;
+
+    // Optional Future-Ready Fields
+    private String staffId;
+    private String maritalStatus;
+    private String emergencyContactInfo;
+    private String bloodGroup;
+    private String nationality;
+    private String aadharNumber;
+    private String profileImageUrl;
+
+    @Pattern(regexp = "FULL_TIME|PART_TIME|GUEST|VISITING", message = "Teacher type must be FULL_TIME, PART_TIME, GUEST or VISITING")
+    private String teacherType;
+
+    // Optional Grade & Section to be assigned later or at creation
+    private Long gradeId;
+    private Long sectionId;
 }
 
 
