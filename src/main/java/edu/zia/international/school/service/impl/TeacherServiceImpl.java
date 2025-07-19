@@ -3,14 +3,9 @@ package edu.zia.international.school.service.impl;
 import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
 import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
-import edu.zia.international.school.entity.Subject;
-import edu.zia.international.school.entity.Teacher;
-import edu.zia.international.school.entity.User;
+import edu.zia.international.school.entity.*;
 import edu.zia.international.school.exception.ResourceNotFoundException;
-import edu.zia.international.school.repository.RoleRepository;
-import edu.zia.international.school.repository.SubjectRepository;
-import edu.zia.international.school.repository.TeacherRepository;
-import edu.zia.international.school.repository.UserRepository;
+import edu.zia.international.school.repository.*;
 import edu.zia.international.school.service.TeacherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,11 +29,13 @@ public class TeacherServiceImpl implements TeacherService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final SubjectRepository subjectRepository;
+    private final GradeRepository gradeRepository;
+    private final SectionRepository sectionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public TeacherResponse createTeacher(CreateTeacherRequest request) {
-        log.info("Creating teacher with email: {}", request.getEmail());
+        log.info("Creating new teacher {} with email: {}",request.getFullName(), request.getEmail());
 
         if (teacherRepository.existsByEmail(request.getEmail()) || userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email already exists.");
@@ -67,6 +64,22 @@ public class TeacherServiceImpl implements TeacherService {
             throw new RuntimeException("One or more subject IDs are invalid");
         }
 
+        // ✅ Optional: Fetch Grade and Section if provided
+        Grade grade = null;
+        Section section = null;
+
+        if (request.getGradeName() != null && !request.getGradeName().isBlank()) {
+            grade = gradeRepository.findByNameIgnoreCase(request.getGradeName())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found: " + request.getGradeName()));
+
+            if (request.getSectionName() != null && !request.getSectionName().isBlank()) {
+                section = sectionRepository.findByGradeAndNameIgnoreCase(grade, request.getSectionName())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Section '" + request.getSectionName() + "' not found in grade " + request.getGradeName()));
+            }
+        }
+
+
         // 🧑‍🏫 Create Teacher entity
         Teacher teacher = Teacher.builder()
                 .fullName(request.getFullName())
@@ -82,6 +95,8 @@ public class TeacherServiceImpl implements TeacherService {
                 .user(user)
                 .role(ROLE_NAME)
                 .subjects(subjects)
+                .grade(grade)       // ✅ Set grade (can be null)
+                .section(section)   // ✅ Set section (can be null)
                 .build();
 
         Teacher saved = teacherRepository.save(teacher);
@@ -104,6 +119,10 @@ public class TeacherServiceImpl implements TeacherService {
         response.setAddress(saved.getAddress());
         response.setJoiningDate(saved.getJoiningDate());
         response.setExperienceYears(saved.getExperienceYears());
+
+        // ✅ Optional Grade & Section in response
+        if (grade != null) response.setGradeName(grade.getName());
+        if (section != null) response.setSectionName(section.getName());
 
         return response;
     }
@@ -163,6 +182,26 @@ public class TeacherServiceImpl implements TeacherService {
         }
         teacher.setSubjects(subjects);
 
+        // Update grade and section if provided
+        if (request.getGradeName() != null && !request.getGradeName().isBlank()) {
+            Grade grade = gradeRepository.findByName(request.getGradeName())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found: " + request.getGradeName()));
+            teacher.setGrade(grade);
+
+            if (request.getSectionName() != null && !request.getSectionName().isBlank()) {
+                Section section = sectionRepository.findByNameAndGrade(request.getSectionName(), grade)
+                        .orElseThrow(() -> new ResourceNotFoundException("Section '" + request.getSectionName()
+                                + "' not found in Grade '" + grade.getName() + "'"));
+                teacher.setSection(section);
+            } else {
+                teacher.setSection(null); // Clear section if not provided
+            }
+        } else {
+            // Clear both grade and section if grade is not provided
+            teacher.setGrade(null);
+            teacher.setSection(null);
+        }
+
         Teacher updated = teacherRepository.save(teacher);
         log.info("Teacher updated with ID: {}", updated.getId());
 
@@ -181,9 +220,15 @@ public class TeacherServiceImpl implements TeacherService {
         response.setExperienceYears(updated.getExperienceYears());
         response.setSubjects(subjects.stream().map(Subject::getName).toList());
 
+        if (updated.getGrade() != null) {
+            response.setGradeName(updated.getGrade().getName());
+        }
+        if (updated.getSection() != null) {
+            response.setSectionName(updated.getSection().getName());
+        }
+
         return response;
     }
-
 
     @Override
     public void deleteTeacher(Long id) {

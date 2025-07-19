@@ -37,4 +37,10 @@ public class UpdateTeacherRequest {
 
     @Min(value = 0, message = "Experience must be a positive number")
     private Integer experienceYears;
+
+    // ✅ Optional Grade assignment
+    private String gradeName;
+
+    // ✅ Optional Section assignment (single section only)
+    private String sectionName;
 }

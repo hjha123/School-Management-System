@@ -25,6 +25,6 @@ public class Section {
     @JoinColumn(name = "grade_id", nullable = false)
     private Grade grade;
 
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
     private List<Teacher> teachers;
 }

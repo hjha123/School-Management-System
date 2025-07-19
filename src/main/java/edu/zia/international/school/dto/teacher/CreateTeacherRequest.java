@@ -60,8 +60,12 @@ public class CreateTeacherRequest {
     private String teacherType;
 
     // Optional Grade & Section to be assigned later or at creation
-    private Long gradeId;
-    private Long sectionId;
+
+    // ✅ Optional Grade assignment
+    private String gradeName;
+
+    // ✅ Optional Section assignment (single section only)
+    private String sectionName;
 }
 
 

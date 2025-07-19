@@ -15,6 +15,7 @@ import edu.zia.international.school.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,25 +66,36 @@ public class GradeServiceImpl implements GradeService {
 
 
     @Override
+    @Transactional
     public void deleteGradeByName(String gradeName) {
         Grade grade = gradeRepository.findByNameIgnoreCase(gradeName)
                 .orElseThrow(() -> new ResourceNotFoundException("Grade not found with name: " + gradeName));
 
-        log.info("Disassociating teachers from sections of grade: {}", gradeName);
+        log.info("Disassociating teachers from sections and grade: {}", gradeName);
 
+        // Disassociate teachers from sections and grade
         for (Section section : grade.getSections()) {
             for (Teacher teacher : section.getTeachers()) {
-                teacher.setSection(null); // Remove section assignment
-                teacherRepository.save(teacher); // Save updated teacher
+                teacher.setSection(null); // Remove section
+                teacher.setGrade(null);   // ✅ Also remove grade
+                teacherRepository.save(teacher);
             }
 
             log.info("Deleting section: {}", section.getName());
             sectionRepository.delete(section);
         }
 
+        // Also disassociate teachers directly assigned to this grade (if not already handled above)
+        List<Teacher> directTeachers = teacherRepository.findByGrade(grade);
+        for (Teacher teacher : directTeachers) {
+            teacher.setGrade(null);
+            teacherRepository.save(teacher);
+        }
+
         log.info("Deleting grade: {}", gradeName);
         gradeRepository.delete(grade);
     }
+
 
     @Override
     public List<GradeWithSectionsResponse> getAllGradesWithSections() {

@@ -19,5 +19,8 @@ public class TeacherResponse {
     private String address;
     private LocalDate joiningDate;
     private Integer experienceYears;
+    private String gradeName;
+    private String sectionName;
+
 
 }

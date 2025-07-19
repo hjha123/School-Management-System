@@ -12,6 +12,8 @@ public interface SectionRepository extends JpaRepository<Section, Long> {
     Optional<Section> findByNameAndGradeId(String name, Long gradeId);
     List<Section> findByGrade(Grade grade);
     Optional<Section> findByNameAndGrade(String name, Grade grade);
+    List<Section> findByGradeAndNameIn(Grade grade, List<String> names);
+    Optional<Section> findByGradeAndNameIgnoreCase(Grade grade, String name);
 
 
 }

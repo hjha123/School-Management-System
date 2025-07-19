@@ -21,6 +21,6 @@ public class Grade {
     @Column(nullable = false, unique = true)
     private String name;  // e.g., "Grade 1", "Grade 2"
 
-    @OneToMany(mappedBy = "grade", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "grade", fetch = FetchType.LAZY)
     private List<Section> sections;
 }
