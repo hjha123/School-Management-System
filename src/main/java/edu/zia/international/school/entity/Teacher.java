@@ -3,6 +3,7 @@ package edu.zia.international.school.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -26,11 +27,20 @@ public class Teacher {
 
     private String phone;
 
-    private String password;
-
     @Column(nullable = false)
     private String role = "TEACHER";
 
+    private String gender;
+
+    private LocalDate dateOfBirth;
+
+    private String qualification;
+
+    private String address;
+
+    private LocalDate joiningDate;
+
+    private Integer experienceYears;
 
     @ManyToMany
     @JoinTable(

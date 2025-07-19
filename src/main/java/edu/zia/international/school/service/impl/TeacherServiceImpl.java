@@ -73,6 +73,12 @@ public class TeacherServiceImpl implements TeacherService {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .phone(request.getPhone())
+                .gender(request.getGender())
+                .dateOfBirth(request.getDateOfBirth())
+                .qualification(request.getQualification())
+                .address(request.getAddress())
+                .joiningDate(request.getJoiningDate())
+                .experienceYears(request.getExperienceYears())
                 .user(user)
                 .role(ROLE_NAME)
                 .subjects(subjects)
@@ -92,6 +98,12 @@ public class TeacherServiceImpl implements TeacherService {
         response.setUsername(saved.getUsername());
         response.setPhone(saved.getPhone());
         response.setSubjects(subjects.stream().map(Subject::getName).toList());
+        response.setGender(saved.getGender());
+        response.setDateOfBirth(saved.getDateOfBirth());
+        response.setQualification(saved.getQualification());
+        response.setAddress(saved.getAddress());
+        response.setJoiningDate(saved.getJoiningDate());
+        response.setExperienceYears(saved.getExperienceYears());
 
         return response;
     }
@@ -122,20 +134,27 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
+    @Transactional
     public TeacherResponse updateTeacher(Long id, UpdateTeacherRequest request) {
         log.info("Updating teacher with ID: {}", id);
 
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with ID: " + id));
 
-        // Update full name
+        // Update basic fields
         teacher.setFullName(request.getFullName());
-        if (teacher.getUser() != null) {
-            teacher.getUser().setName(request.getFullName()); // sync with User
-        }
-
-        // Update phone
         teacher.setPhone(request.getPhone());
+        teacher.setGender(request.getGender());
+        teacher.setDateOfBirth(request.getDateOfBirth());
+        teacher.setQualification(request.getQualification());
+        teacher.setAddress(request.getAddress());
+        teacher.setJoiningDate(request.getJoiningDate());
+        teacher.setExperienceYears(request.getExperienceYears());
+
+        // Sync name with associated User
+        if (teacher.getUser() != null) {
+            teacher.getUser().setName(request.getFullName());
+        }
 
         // Update subjects
         List<Subject> subjects = subjectRepository.findAllById(request.getSubjectIds());
@@ -147,17 +166,24 @@ public class TeacherServiceImpl implements TeacherService {
         Teacher updated = teacherRepository.save(teacher);
         log.info("Teacher updated with ID: {}", updated.getId());
 
-        // Build response
+        // Prepare response
         TeacherResponse response = new TeacherResponse();
         response.setId(updated.getId());
         response.setFullName(updated.getFullName());
         response.setUsername(updated.getUsername());
         response.setEmail(updated.getEmail());
         response.setPhone(updated.getPhone());
+        response.setGender(updated.getGender());
+        response.setDateOfBirth(updated.getDateOfBirth());
+        response.setQualification(updated.getQualification());
+        response.setAddress(updated.getAddress());
+        response.setJoiningDate(updated.getJoiningDate());
+        response.setExperienceYears(updated.getExperienceYears());
         response.setSubjects(subjects.stream().map(Subject::getName).toList());
 
         return response;
     }
+
 
     @Override
     public void deleteTeacher(Long id) {

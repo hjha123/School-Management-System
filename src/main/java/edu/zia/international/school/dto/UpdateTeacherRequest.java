@@ -3,6 +3,7 @@ package edu.zia.international.school.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -17,5 +18,23 @@ public class UpdateTeacherRequest {
     private String phone;
 
     @NotEmpty(message = "At least one subject ID is required")
-    private List<Long> subjectIds;
+    private List<@NotNull(message = "Subject ID cannot be null") Long> subjectIds;
+
+    @NotBlank(message = "Gender is required")
+    private String gender;
+
+    @NotNull(message = "Date of birth is required")
+    private LocalDate dateOfBirth;
+
+    @NotBlank(message = "Qualification is required")
+    private String qualification;
+
+    @NotBlank(message = "Address is required")
+    private String address;
+
+    @NotNull(message = "Joining date is required")
+    private LocalDate joiningDate;
+
+    @Min(value = 0, message = "Experience must be a positive number")
+    private Integer experienceYears;
 }

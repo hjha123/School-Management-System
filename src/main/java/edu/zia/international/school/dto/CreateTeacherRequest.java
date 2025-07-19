@@ -3,8 +3,8 @@ package edu.zia.international.school.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.util.List;
-
 
 @Data
 public class CreateTeacherRequest {
@@ -27,6 +27,26 @@ public class CreateTeacherRequest {
 
     @NotEmpty(message = "At least one subject must be selected")
     private List<Long> subjectIds;
+
+    @NotBlank(message = "Gender is required")
+    @Pattern(regexp = "MALE|FEMALE|OTHER", message = "Gender must be MALE, FEMALE or OTHER")
+    private String gender;
+
+    @Past(message = "Date of birth must be in the past")
+    private LocalDate dateOfBirth;
+
+    @NotBlank(message = "Qualification is required")
+    private String qualification;
+
+    @Size(max = 255, message = "Address must be 255 characters or less")
+    private String address;
+
+    @PastOrPresent(message = "Joining date cannot be in the future")
+    private LocalDate joiningDate;
+
+    @Min(value = 0, message = "Experience years cannot be negative")
+    private Integer experienceYears;
 }
+
 
 
