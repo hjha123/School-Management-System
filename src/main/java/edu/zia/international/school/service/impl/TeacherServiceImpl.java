@@ -4,6 +4,7 @@ import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
 import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
 import edu.zia.international.school.entity.*;
+import edu.zia.international.school.enums.TeacherStatus;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.repository.*;
 import edu.zia.international.school.service.TeacherService;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class TeacherServiceImpl implements TeacherService {
     private static final String ROLE_NAME = "TEACHER";
+    private static final String PREFIX_STAFF_ID = "ZIA";
 
     private final TeacherRepository teacherRepository;
     private final UserRepository userRepository;
@@ -31,6 +34,8 @@ public class TeacherServiceImpl implements TeacherService {
     private final SubjectRepository subjectRepository;
     private final GradeRepository gradeRepository;
     private final SectionRepository sectionRepository;
+    private final TeacherSerialRepository teacherSerialRepository;
+
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -80,6 +85,9 @@ public class TeacherServiceImpl implements TeacherService {
             }
         }
 
+        // 🔢 Generate staff ID
+        String empId = generateEmpId();
+
         // 🧑‍🏫 Create Teacher entity
         Teacher teacher = Teacher.builder()
                 .fullName(request.getFullName())
@@ -92,25 +100,27 @@ public class TeacherServiceImpl implements TeacherService {
                 .address(request.getAddress())
                 .joiningDate(request.getJoiningDate())
                 .experienceYears(request.getExperienceYears())
+                .empId(empId)
+                .status(TeacherStatus.ACTIVE)
                 .user(user)
                 .role(ROLE_NAME)
                 .subjects(subjects)
-                .grade(grade)       // ✅ Set grade (nullable)
-                .section(section)   // ✅ Set section (nullable)
+                .grade(grade)
+                .section(section)
                 .build();
 
         Teacher saved = teacherRepository.save(teacher);
         log.info("Teacher saved with ID: {}", saved.getId());
 
-        // ✉️ TODO: Send email for password reset link (mock/log here)
-        log.info("Send reset link email to: {} with user name {} & temp password: {}", request.getEmail(), generatedUsername, tempPassword);
+        // ✉️ TODO: Send email with username & password (log for now)
+        log.info("Send reset link email to: {} with username {} & temp password: {}", request.getEmail(), generatedUsername, tempPassword);
 
         // 🔁 Prepare response
         TeacherResponse response = new TeacherResponse();
         response.setId(saved.getId());
         response.setFullName(saved.getFullName());
         response.setEmail(saved.getEmail());
-        response.setUsername(saved.getUsername()); // auto-generated
+        response.setUsername(saved.getUsername());
         response.setPhone(saved.getPhone());
         response.setSubjects(subjects.stream().map(Subject::getName).toList());
         response.setGender(saved.getGender());
@@ -119,8 +129,9 @@ public class TeacherServiceImpl implements TeacherService {
         response.setAddress(saved.getAddress());
         response.setJoiningDate(saved.getJoiningDate());
         response.setExperienceYears(saved.getExperienceYears());
+        response.setEmpId(saved.getEmpId());
+        response.setStatus(saved.getStatus());
 
-        // ✅ Include Grade & Section in response if set
         if (grade != null) response.setGradeName(grade.getName());
         if (section != null) response.setSectionName(section.getName());
 
@@ -133,11 +144,26 @@ public class TeacherServiceImpl implements TeacherService {
         return teacherRepository.findAll().stream().map(teacher -> {
             TeacherResponse res = new TeacherResponse();
             BeanUtils.copyProperties(teacher, res);
-            res.setSubjects(teacher.getSubjects().stream()
-                    .map(Subject::getName).collect(Collectors.toList()));
+
+            // Set subject names
+            res.setSubjects(
+                    teacher.getSubjects().stream()
+                            .map(Subject::getName)
+                            .collect(Collectors.toList())
+            );
+
+            // ✅ Set grade and section if present
+            if (teacher.getGrade() != null) {
+                res.setGradeName(teacher.getGrade().getName());
+            }
+            if (teacher.getSection() != null) {
+                res.setSectionName(teacher.getSection().getName());
+            }
+
             return res;
         }).collect(Collectors.toList());
     }
+
 
     @Override
     public TeacherResponse getTeacherById(Long id) {
@@ -267,4 +293,21 @@ public class TeacherServiceImpl implements TeacherService {
 
         return username;
     }
+
+    @Transactional
+    public String generateEmpId() {
+        int currentYear = Year.now().getValue();
+        TeacherSerial serial = teacherSerialRepository.findByYear(currentYear)
+                .orElseGet(() -> new TeacherSerial(currentYear, 0));
+
+        // increment safely
+        int nextSerial = serial.getLastSerial() + 1;
+        serial.setLastSerial(nextSerial);
+        teacherSerialRepository.save(serial);
+
+        // format: ZIA2025001
+        return String.format("ZIA%d%03d", currentYear, nextSerial);
+    }
+
+
 }

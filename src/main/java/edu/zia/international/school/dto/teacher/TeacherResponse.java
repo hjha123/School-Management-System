@@ -1,5 +1,6 @@
 package edu.zia.international.school.dto.teacher;
 
+import edu.zia.international.school.enums.TeacherStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -21,6 +22,7 @@ public class TeacherResponse {
     private Integer experienceYears;
     private String gradeName;
     private String sectionName;
-
+    private String empId;
+    private TeacherStatus status;
 
 }

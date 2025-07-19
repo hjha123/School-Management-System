@@ -44,7 +44,7 @@ public class CreateTeacherRequest {
     private Integer experienceYears;
 
     // Optional Future-Ready Fields
-    private String staffId;
+    private String empId;
     private String maritalStatus;
     private String emergencyContactInfo;
     private String bloodGroup;

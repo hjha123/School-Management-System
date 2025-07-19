@@ -1,5 +1,6 @@
 package edu.zia.international.school.entity;
 
+import edu.zia.international.school.enums.TeacherStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -49,7 +50,11 @@ public class Teacher {
 
     // Optional Additional Fields
     @Column(unique = true)
-    private String staffId;
+    private String empId;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private TeacherStatus status = TeacherStatus.ACTIVE;
 
     private String maritalStatus;
 
