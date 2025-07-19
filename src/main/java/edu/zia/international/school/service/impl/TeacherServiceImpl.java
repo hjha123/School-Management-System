@@ -298,7 +298,12 @@ public class TeacherServiceImpl implements TeacherService {
     public String generateEmpId() {
         int currentYear = Year.now().getValue();
         TeacherSerial serial = teacherSerialRepository.findByYear(currentYear)
-                .orElseGet(() -> new TeacherSerial(currentYear, 0));
+                .orElseGet(() -> {
+                    TeacherSerial newSerial = new TeacherSerial();
+                    newSerial.setYear(currentYear);
+                    newSerial.setLastSerial(0);
+                    return teacherSerialRepository.save(newSerial);
+                });
 
         // increment safely
         int nextSerial = serial.getLastSerial() + 1;
