@@ -107,6 +107,7 @@ public class TeacherServiceImpl implements TeacherService {
                 .subjects(subjects)
                 .grade(grade)
                 .section(section)
+                .teacherType(request.getTeacherType())
                 .build();
 
         Teacher saved = teacherRepository.save(teacher);
@@ -131,6 +132,7 @@ public class TeacherServiceImpl implements TeacherService {
         response.setExperienceYears(saved.getExperienceYears());
         response.setEmpId(saved.getEmpId());
         response.setStatus(saved.getStatus());
+        response.setTeacherType(saved.getTeacherType());
 
         if (grade != null) response.setGradeName(grade.getName());
         if (section != null) response.setSectionName(section.getName());

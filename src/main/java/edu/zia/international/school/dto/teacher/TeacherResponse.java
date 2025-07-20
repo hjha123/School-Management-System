@@ -24,5 +24,6 @@ public class TeacherResponse {
     private String sectionName;
     private String empId;
     private TeacherStatus status;
+    private String teacherType;
 
 }
