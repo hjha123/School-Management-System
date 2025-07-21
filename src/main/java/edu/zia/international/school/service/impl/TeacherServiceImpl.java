@@ -279,6 +279,24 @@ public class TeacherServiceImpl implements TeacherService {
         log.info("Teacher and associated User deleted successfully.");
     }
 
+    @Override
+    public void deleteTeacherByEmpId(String empId) {
+        Teacher teacher = teacherRepository.findByEmpId(empId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with empId: " + empId));
+
+        // First, delete associated User if present
+        if (teacher.getUser() != null) {
+            log.info("Deleting associated user with teacher's empId: {}", teacher.getUser().getUsername());
+            userRepository.delete(teacher.getUser());
+            log.info("Deleted user {}", teacher.getUser().getUsername());
+        }
+
+        // Then delete the teacher
+        teacherRepository.delete(teacher);
+
+        log.info("Deleted teacher with empId: {}", empId);
+    }
+
     private String generateUniqueUsername(String fullName) {
         String[] names = fullName.trim().toLowerCase().split("\\s+");
 
@@ -315,6 +333,5 @@ public class TeacherServiceImpl implements TeacherService {
         // format: ZIA2025001
         return String.format("ZIA%d%03d", currentYear, nextSerial);
     }
-
 
 }

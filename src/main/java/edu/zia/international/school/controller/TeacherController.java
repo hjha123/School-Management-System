@@ -59,6 +59,15 @@ public class TeacherController {
         teacherService.deleteTeacher(id);
         return ResponseEntity.ok("Teacher deleted successfully with id: " + id);
     }
+
+    @DeleteMapping("/emp/{empId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> deleteTeacherByEmpId(@PathVariable String empId) {
+        log.info("Deleting teacher with empId: {}", empId);
+        teacherService.deleteTeacherByEmpId(empId);
+        return ResponseEntity.ok("Teacher deleted successfully with empId: " + empId);
+    }
+
 }
 
 

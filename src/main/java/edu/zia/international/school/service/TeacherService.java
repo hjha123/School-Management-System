@@ -13,6 +13,7 @@ public interface TeacherService {
     TeacherResponse getTeacherById(Long id);
     TeacherResponse updateTeacher(Long id, UpdateTeacherRequest request);
     void deleteTeacher(Long id);
+    void deleteTeacherByEmpId(String empId);
 
 }
 

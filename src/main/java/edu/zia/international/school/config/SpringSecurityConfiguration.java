@@ -66,11 +66,6 @@ public class SpringSecurityConfiguration {
         httpSecurity.exceptionHandling(exception ->
                 exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
 
-      /*  httpSecurity.exceptionHandling(exception -> exception.authenticationEntryPoint((request, response, authException) -> {
-            response.addHeader(HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Restricted Content\"");
-            response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase());
-        }));*/
-
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return httpSecurity.build();

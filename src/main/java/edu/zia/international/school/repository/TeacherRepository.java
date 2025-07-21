@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     boolean existsByUsername(String username);
@@ -14,6 +15,7 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     List<Teacher> findByGrade(Grade grade);
     @Query("SELECT COUNT(t) FROM Teacher t WHERE YEAR(t.joiningDate) = :year")
     long countByJoiningYear(@Param("year") int year);
+    Optional<Teacher> findByEmpId(String empId);
 
 }
 

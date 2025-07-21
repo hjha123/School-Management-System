@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface TeacherSerialRepository extends JpaRepository<TeacherSerial, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<TeacherSerial> findByYear(int year);
+
 }
