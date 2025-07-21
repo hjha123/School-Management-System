@@ -61,6 +61,7 @@ public class TeacherServiceImpl implements TeacherService {
         user.setPassword(passwordEncoder.encode(tempPassword));
         user.setRole(roleRepository.findByName(ROLE_NAME)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
+        user.setAssignedRole(ROLE_NAME);
         userRepository.save(user);
         log.info("User created for teacher: {}", user.getId());
 
