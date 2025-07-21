@@ -76,6 +76,13 @@ public class TeacherController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/emp/{empId}")
+    public ResponseEntity<TeacherResponse> updateTeacherByEmpId(@PathVariable String empId,
+            @Valid @RequestBody UpdateTeacherRequest request) {
+        log.info("Updating teacher with empId: {}", empId);
+        TeacherResponse updated = teacherService.updateTeacherByEmpId(empId, request);
+        return ResponseEntity.ok(updated);
+    }
 
 }
 

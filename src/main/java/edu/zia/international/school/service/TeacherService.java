@@ -16,6 +16,8 @@ public interface TeacherService {
     TeacherResponse updateTeacher(Long id, UpdateTeacherRequest request);
     void deleteTeacher(Long id);
     void deleteTeacherByEmpId(String empId);
+    TeacherResponse updateTeacherByEmpId(String empId, UpdateTeacherRequest request);
+
 
 }
 

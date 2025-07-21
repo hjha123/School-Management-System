@@ -16,8 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Year;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -86,7 +85,7 @@ public class TeacherServiceImpl implements TeacherService {
             }
         }
 
-        // 🔢 Generate staff ID
+        // 🔢 Generate Emp ID
         String empId = generateEmpId();
 
         // 🧑‍🏫 Create Teacher entity
@@ -190,6 +189,13 @@ public class TeacherServiceImpl implements TeacherService {
 
         TeacherResponse res = new TeacherResponse();
         BeanUtils.copyProperties(teacher, res);
+        if(teacher.getGrade() != null){
+            res.setGradeName(teacher.getGrade().getName());
+            if(Objects.nonNull(teacher.getGrade().getSections())){
+                Optional<String> sectionName = teacher.getGrade().getSections().stream().map(section -> section.getName()).findFirst();
+                res.setSectionName(sectionName.isPresent() ? sectionName.get() : null);
+            }
+        }
 
         return res;
     }
@@ -311,6 +317,77 @@ public class TeacherServiceImpl implements TeacherService {
 
         log.info("Deleted teacher with empId: {}", empId);
     }
+
+    @Override
+    public TeacherResponse updateTeacherByEmpId(String empId, UpdateTeacherRequest request) {
+        Teacher teacher = teacherRepository.findByEmpId(empId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with empId: " + empId));
+
+        log.info("Updating teacher with empId: {}", empId);
+
+        // Update simple fields
+        teacher.setFullName(request.getFullName());
+        teacher.setEmail(request.getEmail());
+        teacher.setPhone(request.getPhone());
+        teacher.setGender(request.getGender());
+        teacher.setDateOfBirth(request.getDateOfBirth());
+        teacher.setQualification(request.getQualification());
+        teacher.setAddress(request.getAddress());
+        teacher.setJoiningDate(request.getJoiningDate());
+        teacher.setExperienceYears(request.getExperienceYears());
+        teacher.setTeacherType(request.getTeacherType());
+        teacher.setMaritalStatus(request.getMaritalStatus());
+        teacher.setEmergencyContactInfo(request.getEmergencyContactInfo());
+        teacher.setBloodGroup(request.getBloodGroup());
+        teacher.setNationality(request.getNationality());
+        teacher.setAadharNumber(request.getAadharNumber());
+        teacher.setProfileImageUrl(request.getProfileImageUrl());
+
+        // Update Subjects
+        if (request.getSubjectIds() != null && !request.getSubjectIds().isEmpty()) {
+            List<Subject> subjects = subjectRepository.findAllById(request.getSubjectIds());
+            teacher.setSubjects(new ArrayList<>(subjects));
+        } else {
+            teacher.setSubjects(null);
+        }
+
+        // Update Grade if provided
+        String gradeName = "";
+        String sectionName = "";
+        if (request.getGradeName() != null) {
+            Grade grade = gradeRepository.findByName(request.getGradeName())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found with name: " + request.getGradeName()));
+            teacher.setGrade(grade);
+            gradeName = grade.getName();
+
+            // If section is also provided, validate section under grade
+            if (request.getSectionName() != null) {
+                Section section = sectionRepository.findByNameAndGrade(request.getSectionName(), grade)
+                        .orElseThrow(() -> new ResourceNotFoundException("Section '" + request.getSectionName()
+                                + "' not found under Grade '" + request.getGradeName() + "'"));
+                teacher.setSection(section);
+                sectionName = section.getName();
+            } else {
+                teacher.setSection(null);
+            }
+        } else {
+            if (request.getSectionName() == null) {
+                teacher.setSection(null);
+            }
+        }
+
+        Teacher updatedTeacher = teacherRepository.save(teacher);
+        log.info("Teacher with empId {} updated successfully", empId);
+
+        TeacherResponse res = new TeacherResponse();
+        BeanUtils.copyProperties(updatedTeacher, res);
+        res.setSubjects(updatedTeacher.getSubjects().stream().map(Subject::getName).toList());
+        res.setGradeName(gradeName);
+        res.setSectionName(sectionName);
+
+        return res;
+    }
+
 
     private String generateUniqueUsername(String fullName) {
         String[] names = fullName.trim().toLowerCase().split("\\s+");
