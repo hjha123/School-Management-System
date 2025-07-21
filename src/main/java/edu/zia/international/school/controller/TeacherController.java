@@ -68,6 +68,15 @@ public class TeacherController {
         return ResponseEntity.ok("Teacher deleted successfully with empId: " + empId);
     }
 
+    @GetMapping("/emp/{empId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<TeacherResponse> getTeacherByEmpId(@PathVariable String empId) {
+        log.info("Received request to fetch teacher by Employee ID: {}", empId);
+        TeacherResponse response = teacherService.getByEmpId(empId);
+        return ResponseEntity.ok(response);
+    }
+
+
 }
 
 

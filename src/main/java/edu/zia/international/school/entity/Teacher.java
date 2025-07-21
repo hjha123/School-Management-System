@@ -48,7 +48,6 @@ public class Teacher {
 
     private Integer experienceYears;
 
-    // Optional Additional Fields
     @Column(unique = true)
     private String empId;
 
@@ -56,6 +55,7 @@ public class Teacher {
     @Enumerated(EnumType.STRING)
     private TeacherStatus status = TeacherStatus.ACTIVE;
 
+    // Optional Additional Fields
     private String maritalStatus;
 
     private String emergencyContactInfo;

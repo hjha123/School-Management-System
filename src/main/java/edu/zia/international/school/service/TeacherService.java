@@ -11,6 +11,8 @@ public interface TeacherService {
     TeacherResponse createTeacher(CreateTeacherRequest request);
     List<TeacherResponse> getAllTeachers();
     TeacherResponse getTeacherById(Long id);
+    TeacherResponse getByEmpId(String empId);
+
     TeacherResponse updateTeacher(Long id, UpdateTeacherRequest request);
     void deleteTeacher(Long id);
     void deleteTeacherByEmpId(String empId);

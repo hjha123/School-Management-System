@@ -1,6 +1,7 @@
 package edu.zia.international.school.dto.teacher;
 
 import edu.zia.international.school.enums.TeacherStatus;
+import jakarta.persistence.Column;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -25,5 +26,11 @@ public class TeacherResponse {
     private String empId;
     private TeacherStatus status;
     private String teacherType;
+    private String maritalStatus;
+    private String emergencyContactInfo;
+    private String bloodGroup;
+    private String nationality;
+    private String aadharNumber;
+    private String profileImageUrl;
 
 }

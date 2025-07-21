@@ -181,6 +181,20 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
+    public TeacherResponse getByEmpId(String empId) {
+        log.info("Fetching teacher with Employee ID: {}", empId);
+
+        Teacher teacher = teacherRepository.findByEmpId(empId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with Employee ID:: " + empId));
+
+        TeacherResponse res = new TeacherResponse();
+        BeanUtils.copyProperties(teacher, res);
+
+        return res;
+    }
+
+
+    @Override
     @Transactional
     public TeacherResponse updateTeacher(Long id, UpdateTeacherRequest request) {
         log.info("Updating teacher with ID: {}", id);
