@@ -10,10 +10,16 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-#    show-sql: true
+    #    show-sql: true
     properties:
       hibernate:
-#        format_sql: true           # pretty‑prints SQL in logs
+  #        format_sql: true           # pretty‑prints SQL in logs
+
+  web:
+    resources:
+      static-locations:
+        - classpath:/static/
+        - file:uploads/
 
 logging:
   level:
@@ -26,7 +32,3 @@ logging:
 app:
   jwt-secret: efb4c2bcdf2ad82a8318f4985bedf1ec10a722f0822d5f5c26520e53cb65c279
   jwt-expiration-milliseconds: 604800000   # 7 days
-#spring-doc:
-#  swagger-ui:
-#    path: /swagger-ui.html
-

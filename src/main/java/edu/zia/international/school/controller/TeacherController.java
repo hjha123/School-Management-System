@@ -11,10 +11,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@CrossOrigin("*")
+//@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/api/teachers")
@@ -84,6 +85,15 @@ public class TeacherController {
         return ResponseEntity.ok(updated);
     }
 
+    @PutMapping("/{empId}/upload-image")
+    public ResponseEntity<TeacherResponse> uploadProfileImage(
+            @PathVariable String empId,
+            @RequestParam("image") MultipartFile imageFile) {
+        log.info("Received request to upload profile image for empId: {}", empId);
+        TeacherResponse updated = teacherService.uploadProfileImage(empId, imageFile);
+        log.info("Profile image uploaded successfully for empId: {}", empId);
+        return ResponseEntity.ok(updated);
+    }
 }
 
 

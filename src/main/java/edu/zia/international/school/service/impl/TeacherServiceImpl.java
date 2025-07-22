@@ -14,7 +14,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Year;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,7 +32,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class TeacherServiceImpl implements TeacherService {
     private static final String ROLE_NAME = "TEACHER";
-    private static final String PREFIX_STAFF_ID = "ZIA";
+    private static final String PREFIX_EMPLOYEE_ID = "ZIA";
 
     private final TeacherRepository teacherRepository;
     private final UserRepository userRepository;
@@ -319,6 +326,7 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
+    @Transactional
     public TeacherResponse updateTeacherByEmpId(String empId, UpdateTeacherRequest request) {
         Teacher teacher = teacherRepository.findByEmpId(empId)
                 .orElseThrow(() -> new ResourceNotFoundException("Teacher not found with empId: " + empId));
@@ -327,7 +335,6 @@ public class TeacherServiceImpl implements TeacherService {
 
         // Update simple fields
         teacher.setFullName(request.getFullName());
-        teacher.setEmail(request.getEmail());
         teacher.setPhone(request.getPhone());
         teacher.setGender(request.getGender());
         teacher.setDateOfBirth(request.getDateOfBirth());
@@ -340,8 +347,9 @@ public class TeacherServiceImpl implements TeacherService {
         teacher.setEmergencyContactInfo(request.getEmergencyContactInfo());
         teacher.setBloodGroup(request.getBloodGroup());
         teacher.setNationality(request.getNationality());
-        teacher.setAadharNumber(request.getAadharNumber());
+        teacher.setAadharNumber(normalizeEmptyToNull(request.getAadharNumber()));
         teacher.setProfileImageUrl(request.getProfileImageUrl());
+
 
         // Update Subjects
         if (request.getSubjectIds() != null && !request.getSubjectIds().isEmpty()) {
@@ -354,14 +362,14 @@ public class TeacherServiceImpl implements TeacherService {
         // Update Grade if provided
         String gradeName = "";
         String sectionName = "";
-        if (request.getGradeName() != null) {
+        if (request.getGradeName() != null && !request.getGradeName().isBlank()) {
             Grade grade = gradeRepository.findByName(request.getGradeName())
                     .orElseThrow(() -> new ResourceNotFoundException("Grade not found with name: " + request.getGradeName()));
             teacher.setGrade(grade);
             gradeName = grade.getName();
 
             // If section is also provided, validate section under grade
-            if (request.getSectionName() != null) {
+            if (request.getSectionName() != null && !sectionName.isBlank()) {
                 Section section = sectionRepository.findByNameAndGrade(request.getSectionName(), grade)
                         .orElseThrow(() -> new ResourceNotFoundException("Section '" + request.getSectionName()
                                 + "' not found under Grade '" + request.getGradeName() + "'"));
@@ -388,6 +396,9 @@ public class TeacherServiceImpl implements TeacherService {
         return res;
     }
 
+    private String normalizeEmptyToNull(String input) {
+        return (input == null || input.trim().isEmpty()) ? null : input.trim();
+    }
 
     private String generateUniqueUsername(String fullName) {
         String[] names = fullName.trim().toLowerCase().split("\\s+");
@@ -425,5 +436,54 @@ public class TeacherServiceImpl implements TeacherService {
         // format: ZIA2025001
         return String.format("ZIA%d%03d", currentYear, nextSerial);
     }
+
+    @Override
+    public TeacherResponse uploadProfileImage(String empId, MultipartFile imageFile) {
+        log.debug("Starting image upload process for empId: {}", empId);
+
+        Teacher teacher = teacherRepository.findByEmpId(empId)
+                .orElseThrow(() -> {
+                    log.warn("Teacher not found for empId: {}", empId);
+                    return new ResourceNotFoundException("Teacher not found with empId: " + empId);
+                });
+
+        if (imageFile.isEmpty()) {
+            log.error("Uploaded file is empty for empId: {}", empId);
+            throw new IllegalArgumentException("Uploaded image is empty.");
+        }
+
+        try {
+            String uploadsDir = "uploads/";
+            String originalFilename = StringUtils.cleanPath(imageFile.getOriginalFilename());
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = empId + "_profile" + fileExtension;
+
+            Path uploadPath = Paths.get(uploadsDir);
+            if (!Files.exists(uploadPath)) {
+                log.info("Creating upload directory at: {}", uploadPath.toAbsolutePath());
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            String imageUrl = "/uploads/" + filename;
+            teacher.setProfileImageUrl(imageUrl);
+            log.info("Image saved at: {} for empId: {}", filePath.toAbsolutePath(), empId);
+
+            Teacher updatedTeacher = teacherRepository.save(teacher);
+            log.debug("Teacher entity updated with image URL for empId: {}", empId);
+
+            TeacherResponse response = new TeacherResponse();
+            BeanUtils.copyProperties(updatedTeacher, response);
+
+            return response;
+
+        } catch (IOException e) {
+            log.error("Failed to upload image for empId: {}", empId, e);
+            throw new RuntimeException("Failed to upload image", e);
+        }
+    }
+
 
 }
