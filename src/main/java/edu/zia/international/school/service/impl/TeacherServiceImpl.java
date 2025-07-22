@@ -467,8 +467,7 @@ public class TeacherServiceImpl implements TeacherService {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            String imageUrl = "/uploads/" + filename;
-            teacher.setProfileImageUrl(imageUrl);
+            teacher.setProfileImageUrl(filename);
             log.info("Image saved at: {} for empId: {}", filePath.toAbsolutePath(), empId);
 
             Teacher updatedTeacher = teacherRepository.save(teacher);

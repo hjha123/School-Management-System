@@ -15,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-//@CrossOrigin("*")
 @Slf4j
 @RestController
 @RequestMapping("/api/teachers")

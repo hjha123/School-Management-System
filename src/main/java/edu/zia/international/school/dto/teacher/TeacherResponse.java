@@ -33,4 +33,12 @@ public class TeacherResponse {
     private String aadharNumber;
     private String profileImageUrl;
 
+    public String getProfileImageUrl() {
+        if (this.profileImageUrl == null || this.profileImageUrl.isBlank()) {
+            return "default-profile.png";
+        }
+        return profileImageUrl;
+    }
+
+
 }

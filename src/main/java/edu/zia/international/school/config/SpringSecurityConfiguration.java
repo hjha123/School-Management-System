@@ -38,7 +38,9 @@ public class SpringSecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf((csrf) -> csrf.disable())
+        httpSecurity
+                .cors(Customizer.withDefaults())
+                .csrf((csrf) -> csrf.disable())
                 .authorizeHttpRequests((authorize) -> {
                     authorize.requestMatchers(
                             "/api/auth/**",
@@ -48,6 +50,7 @@ public class SpringSecurityConfiguration {
                             "/swagger-resources/**",
                             "/webjars/**"
                     ).permitAll();
+                    authorize.requestMatchers("/uploads/**").permitAll() ;
                    /* authorize.requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN");
                     authorize.requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN");
                     authorize.requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN");

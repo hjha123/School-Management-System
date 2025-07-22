@@ -19,7 +19,7 @@ spring:
     resources:
       static-locations:
         - classpath:/static/
-        - file:uploads/
+        - file:./uploads/
 
 logging:
   level:

@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 
-@CrossOrigin("*")
 @RestController
 @RequestMapping("/api/auth")
 @Slf4j
