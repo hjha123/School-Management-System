@@ -11,6 +11,8 @@ import edu.zia.international.school.service.TeacherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,8 +43,9 @@ public class TeacherServiceImpl implements TeacherService {
     private final GradeRepository gradeRepository;
     private final SectionRepository sectionRepository;
     private final TeacherSerialRepository teacherSerialRepository;
-
     private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender javaMailSender;
+
 
     @Override
     public TeacherResponse createTeacher(CreateTeacherRequest request) {
@@ -120,8 +123,10 @@ public class TeacherServiceImpl implements TeacherService {
         Teacher saved = teacherRepository.save(teacher);
         log.info("Teacher saved with ID: {}", saved.getId());
 
-        // ✉️ TODO: Send email with username & password (log for now)
-        log.info("Send reset link email to: {} with username {} & temp password: {}", request.getEmail(), generatedUsername, tempPassword);
+        log.info("Sending welcome mail to user {} at email id {}", user.getName(), user.getEmail());
+        sendWelcomeEmail(request.getEmail(), request.getFullName(), generatedUsername, tempPassword, empId);
+        log.info("Welcome email sent to {}", request.getEmail());
+
 
         // 🔁 Prepare response
         TeacherResponse response = new TeacherResponse();
@@ -482,6 +487,35 @@ public class TeacherServiceImpl implements TeacherService {
             log.error("Failed to upload image for empId: {}", empId, e);
             throw new RuntimeException("Failed to upload image", e);
         }
+    }
+
+    private void sendWelcomeEmail(String toEmail, String fullName, String username, String tempPassword, String empId) {
+        String subject = "Welcome to ZIA International School";
+        String body = String.format("""
+            Dear %s,
+            
+            Welcome to ZIA International School!
+
+            Your teacher account has been created successfully. Please find your login credentials below:
+
+            👤 Username: %s
+            🔐 Temporary Password: %s
+            🆔 Employee ID: %s
+
+            You can log in to the system and reset your password using the 'Forgot Password' option.
+
+            Login Portal: http://localhost:3000/login
+
+            Regards,
+            ZIA International School Admin
+            """, fullName, username, tempPassword, empId);
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject(subject);
+        message.setText(body);
+
+        javaMailSender.send(message);
     }
 
 
