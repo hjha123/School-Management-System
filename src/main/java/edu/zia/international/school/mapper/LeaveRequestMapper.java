@@ -29,7 +29,8 @@ public class LeaveRequestMapper {
                 entity.getStartDate(),
                 entity.getEndDate(),
                 entity.getReason(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getAdminRemarks()
         );
     }
 }

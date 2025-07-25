@@ -37,7 +37,7 @@ public class LeaveRequestController {
     /**
      * ✅ Admin updates leave status (approve or reject).
      */
-    @PutMapping("/{leaveId}/status")
+    @PutMapping("/requests/{leaveId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<LeaveRequestResponse> updateLeaveStatus(
             @PathVariable Long leaveId,
@@ -89,4 +89,16 @@ public class LeaveRequestController {
         List<LeaveRequestResponse> responses = leaveRequestService.getAllPendingLeaveRequests();
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * 📚 Get full leave history for an employee (Admin only).
+     */
+    @GetMapping("/history/{empId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<LeaveRequestResponse>> getLeaveHistoryByEmpId(@PathVariable String empId) {
+        log.info("Admin fetching full leave history for empId: {}", empId);
+        List<LeaveRequestResponse> responses = leaveRequestService.getLeaveRequestsByEmpId(empId);
+        return ResponseEntity.ok(responses);
+    }
+
 }
