@@ -1,7 +1,6 @@
 package edu.zia.international.school.dto.teacher;
 
 import edu.zia.international.school.enums.TeacherStatus;
-import jakarta.persistence.Column;
 import lombok.Data;
 
 import java.time.LocalDate;
