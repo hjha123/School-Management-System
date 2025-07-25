@@ -1,6 +1,7 @@
 package edu.zia.international.school.controller;
 
 import edu.zia.international.school.dto.leave.CreateLeaveRequest;
+import edu.zia.international.school.dto.leave.LeaveBalanceResponse;
 import edu.zia.international.school.dto.leave.LeaveRequestResponse;
 import edu.zia.international.school.dto.leave.UpdateLeaveStatusRequest;
 import edu.zia.international.school.service.LeaveRequestService;
@@ -100,5 +101,17 @@ public class LeaveRequestController {
         List<LeaveRequestResponse> responses = leaveRequestService.getLeaveRequestsByEmpId(empId);
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * 📊 Get leave balance by employee ID (Admin or the Teacher themself)
+     */
+    @GetMapping("/balance/{empId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public ResponseEntity<LeaveBalanceResponse> getLeaveBalance(@PathVariable String empId) {
+        log.info("Fetching leave balance for empId: {}", empId);
+        LeaveBalanceResponse response = leaveRequestService.getLeaveBalanceByEmpId(empId);
+        return ResponseEntity.ok(response);
+    }
+
 
 }

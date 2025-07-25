@@ -1,8 +1,6 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.leave.CreateLeaveRequest;
-import edu.zia.international.school.dto.leave.LeaveRequestResponse;
-import edu.zia.international.school.dto.leave.UpdateLeaveStatusRequest;
+import edu.zia.international.school.dto.leave.*;
 import edu.zia.international.school.entity.LeaveAllocation;
 import edu.zia.international.school.entity.LeaveRequest;
 import edu.zia.international.school.entity.Teacher;
@@ -19,8 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -128,4 +128,35 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 .map(leaveRequestMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public LeaveBalanceResponse getLeaveBalanceByEmpId(String empId) {
+        log.info("Getting leave balance for empId: {}", empId);
+
+        var teacher = teacherRepository.findByEmpId(empId)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher with empId " + empId + " not found."));
+
+        int currentYear = LocalDate.now().getYear();
+
+        List<LeaveAllocation> allocations = leaveAllocationRepository.findByEmpIdAndYear(empId, currentYear);
+
+        if (allocations.isEmpty()) {
+            log.warn("No leave allocations found for empId={} in year={}", empId, currentYear);
+        }
+
+        // Create nested map
+        Map<String, LeaveTypeBalance> leaveBalances = allocations.stream()
+                .collect(Collectors.toMap(
+                        alloc -> alloc.getLeaveType().name(),
+                        alloc -> new LeaveTypeBalance(alloc.getTotalAllocatedLeaves(), alloc.getRemainingLeaves())
+                ));
+
+        return new LeaveBalanceResponse(
+                empId,
+                teacher.getFullName(),
+                currentYear,
+                leaveBalances
+        );
+    }
+
 }
