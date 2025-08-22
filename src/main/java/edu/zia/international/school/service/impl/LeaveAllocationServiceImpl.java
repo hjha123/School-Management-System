@@ -1,11 +1,8 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.leave.BulkLeaveAllocationRequest;
-import edu.zia.international.school.dto.leave.CreateLeaveAllocationRequest;
-import edu.zia.international.school.dto.leave.EmployeeLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.LeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.LeaveAllocationResponse;
 import edu.zia.international.school.entity.LeaveAllocation;
-import edu.zia.international.school.exception.ResourceAlreadyExistsException;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.mapper.LeaveAllocationMapper;
 import edu.zia.international.school.repository.LeaveAllocationRepository;
@@ -15,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,44 +24,10 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
 
     private final TeacherRepository teacherRepository;
 
-    @Override
-    public LeaveAllocationResponse allocateLeave(CreateLeaveAllocationRequest request) {
-        log.info("Allocating leave for empId={} type={} year={}",
-                request.empId(), request.leaveType(), request.year());
-
-        teacherRepository.findByEmpId(request.empId())
-                .orElseThrow(() -> new ResourceNotFoundException("Teacher with empId " + request.empId() + " not found."));
-
-        leaveAllocationRepository.findByEmpIdAndLeaveTypeAndYear(request.empId(), request.leaveType(), request.year())
-                .ifPresent(existing -> {
-                    throw new ResourceAlreadyExistsException("Leave already allocated for this employee, type, and year.");
-                });
-
-        LeaveAllocation entity = LeaveAllocation.builder()
-                .empId(request.empId())
-                .leaveType(request.leaveType())
-                .year(request.year())
-                .totalAllocatedLeaves(request.totalAllocated())
-                .remainingLeaves(request.totalAllocated())
-                .build();
-
-        LeaveAllocation saved = leaveAllocationRepository.save(entity);
-
-        log.info("Leave allocation saved with id={}", saved.getId());
-
-        return new LeaveAllocationResponse(
-                saved.getId(),
-                saved.getEmpId(),
-                saved.getLeaveType(),
-                saved.getYear(),
-                saved.getTotalAllocatedLeaves(),
-                saved.getRemainingLeaves()
-        );
-    }
 
     @Override
-    public List<LeaveAllocationResponse> allocateLeavesToAllEmployees(BulkLeaveAllocationRequest request) {
-        log.info("Allocating/Updating bulk leave for {} employees for year={} and type={}",
+    public List<LeaveAllocationResponse> allocateLeave(LeaveAllocationRequest request) {
+        log.info("Allocating/Updating leave for {} employees for year={} and type={}",
                 request.empIds().size(), request.year(), request.leaveType());
 
         List<LeaveAllocationResponse> responseList = new ArrayList<>();
@@ -76,15 +38,18 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
                 teacherRepository.findByEmpId(empId)
                         .orElseThrow(() -> new ResourceNotFoundException("Teacher with empId " + empId + " not found."));
 
-                // Check for existing allocation
                 LeaveAllocation allocation = leaveAllocationRepository
                         .findByEmpIdAndLeaveTypeAndYear(empId, request.leaveType(), request.year())
                         .map(existing -> {
                             log.info("Updating existing leave allocation for empId={} year={} type={}", empId, request.year(), request.leaveType());
+
+                            // Calculate leaves used based on old allocation
+                            int leavesUsed = existing.getTotalAllocatedLeaves() - existing.getRemainingLeaves();
+
+                            // Update total allocated
                             existing.setTotalAllocatedLeaves(request.totalAllocated());
 
-                            // Adjust remaining leaves logically:
-                            int leavesUsed = existing.getTotalAllocatedLeaves() - existing.getRemainingLeaves();
+                            // Adjust remaining logically
                             int newRemaining = request.totalAllocated() - leavesUsed;
                             existing.setRemainingLeaves(Math.max(newRemaining, 0));
 
@@ -101,6 +66,7 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
                                     .build();
                         });
 
+
                 LeaveAllocation saved = leaveAllocationRepository.save(allocation);
                 responseList.add(LeaveAllocationMapper.toResponse(saved));
 
@@ -111,24 +77,8 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
             }
         }
 
-        log.info("Bulk leave allocation/update completed. Total processed: {}", responseList.size());
+        log.info("Leave allocation/update completed. Total processed: {}", responseList.size());
         return responseList;
-    }
-
-    @Override
-    public List<LeaveAllocationResponse> allocateLeaveToAnEmployee(EmployeeLeaveAllocationRequest request) {
-        log.info("Allocating leave for empId={}, {}", request.empId(), request);
-        List<LeaveAllocationResponse> responses = new ArrayList<>();
-        for (EmployeeLeaveAllocationRequest.LeaveAllocationEntry entry : request.allocations()) {
-            CreateLeaveAllocationRequest singleRequest = new CreateLeaveAllocationRequest(
-                    request.empId(),
-                    entry.leaveType(),
-                    LocalDate.now().getYear(),
-                    entry.days()
-            );
-            responses.add(this.allocateLeave(singleRequest));
-        }
-        return responses;
     }
     
 }

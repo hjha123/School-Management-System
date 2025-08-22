@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import edu.zia.international.school.enums.LeaveType;
 
-public record BulkLeaveAllocationRequest(
+public record LeaveAllocationRequest(
         @NotNull List<String> empIds,
         @NotNull LeaveType leaveType,
         @Min(1) int year,

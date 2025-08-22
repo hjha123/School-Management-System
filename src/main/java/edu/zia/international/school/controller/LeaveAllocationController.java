@@ -1,8 +1,6 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.leave.BulkLeaveAllocationRequest;
-import edu.zia.international.school.dto.leave.CreateLeaveAllocationRequest;
-import edu.zia.international.school.dto.leave.EmployeeLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.LeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.LeaveAllocationResponse;
 import edu.zia.international.school.service.LeaveAllocationService;
 import jakarta.validation.Valid;
@@ -26,29 +24,14 @@ public class LeaveAllocationController {
 
     private final LeaveAllocationService leaveAllocationService;
 
-    @PostMapping
+    @PostMapping("")
     @PreAuthorize("hasRole('ADMIN')")
-    public LeaveAllocationResponse allocateLeave(@Valid @RequestBody CreateLeaveAllocationRequest request) {
-        log.info("API called to allocate leave: {}", request);
-        return leaveAllocationService.allocateLeave(request);
-    }
-
-    @PostMapping("/bulk")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<LeaveAllocationResponse>> allocateBulkLeaves(
-            @Valid @RequestBody BulkLeaveAllocationRequest request
+    public ResponseEntity<List<LeaveAllocationResponse>> allocateLeave(
+            @Valid @RequestBody LeaveAllocationRequest request
     ) {
-        log.info("API called to allocate Leave in Bulk to Multiple Employees: {}", request);
-        List<LeaveAllocationResponse> responses = leaveAllocationService.allocateLeavesToAllEmployees(request);
+        log.info("API called to allocate Leave for Employees: {}", request);
+        List<LeaveAllocationResponse> responses = leaveAllocationService.allocateLeave(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
-    }
-
-    @PostMapping("/bulk-allocate")
-    @PreAuthorize("hasRole('ADMIN')")
-    public List<LeaveAllocationResponse> allocateLeavesInBulkToAnEmployee(
-            @Valid @RequestBody EmployeeLeaveAllocationRequest request) {
-        log.info("API called to bulk allocate leaves to an employee: {}", request);
-        return leaveAllocationService.allocateLeaveToAnEmployee(request);
     }
 
 }
