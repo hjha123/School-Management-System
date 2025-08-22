@@ -1,6 +1,6 @@
 package edu.zia.international.school.enums;
 
-public enum LeaveType {
+public enum  LeaveType {
     CASUAL,
     SICK,
     EARNED,

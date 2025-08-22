@@ -1,7 +1,8 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.BulkLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.BulkLeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.CreateLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.EmployeeLeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.LeaveAllocationResponse;
 import edu.zia.international.school.service.LeaveAllocationService;
 import jakarta.validation.Valid;
@@ -38,8 +39,16 @@ public class LeaveAllocationController {
             @Valid @RequestBody BulkLeaveAllocationRequest request
     ) {
         log.info("API called to allocate Leave in Bulk to Multiple Employees: {}", request);
-        List<LeaveAllocationResponse> responses = leaveAllocationService.allocateLeavesToMultipleEmployees(request);
+        List<LeaveAllocationResponse> responses = leaveAllocationService.allocateLeavesToAllEmployees(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    @PostMapping("/bulk-allocate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<LeaveAllocationResponse> allocateLeavesInBulkToAnEmployee(
+            @Valid @RequestBody EmployeeLeaveAllocationRequest request) {
+        log.info("API called to bulk allocate leaves to an employee: {}", request);
+        return leaveAllocationService.allocateLeaveToAnEmployee(request);
     }
 
 }

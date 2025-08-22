@@ -1,7 +1,8 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.BulkLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.BulkLeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.CreateLeaveAllocationRequest;
+import edu.zia.international.school.dto.leave.EmployeeLeaveAllocationRequest;
 import edu.zia.international.school.dto.leave.LeaveAllocationResponse;
 import edu.zia.international.school.entity.LeaveAllocation;
 import edu.zia.international.school.exception.ResourceAlreadyExistsException;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,8 +64,8 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
     }
 
     @Override
-    public List<LeaveAllocationResponse> allocateLeavesToMultipleEmployees(BulkLeaveAllocationRequest request) {
-        log.info("Allocating bulk leave for {} employees for year={} and type={}",
+    public List<LeaveAllocationResponse> allocateLeavesToAllEmployees(BulkLeaveAllocationRequest request) {
+        log.info("Allocating/Updating bulk leave for {} employees for year={} and type={}",
                 request.empIds().size(), request.year(), request.leaveType());
 
         List<LeaveAllocationResponse> responseList = new ArrayList<>();
@@ -75,35 +77,58 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
                         .orElseThrow(() -> new ResourceNotFoundException("Teacher with empId " + empId + " not found."));
 
                 // Check for existing allocation
-                leaveAllocationRepository.findByEmpIdAndLeaveTypeAndYear(empId, request.leaveType(), request.year())
-                        .ifPresent(existing -> {
-                            throw new ResourceAlreadyExistsException("Leave already allocated for empId=" + empId);
-                        });
+                LeaveAllocation allocation = leaveAllocationRepository
+                        .findByEmpIdAndLeaveTypeAndYear(empId, request.leaveType(), request.year())
+                        .map(existing -> {
+                            log.info("Updating existing leave allocation for empId={} year={} type={}", empId, request.year(), request.leaveType());
+                            existing.setTotalAllocatedLeaves(request.totalAllocated());
 
-                // Create and save
-                LeaveAllocation allocation = LeaveAllocation.builder()
-                        .empId(empId)
-                        .leaveType(request.leaveType())
-                        .year(request.year())
-                        .totalAllocatedLeaves(request.totalAllocated())
-                        .remainingLeaves(request.totalAllocated())
-                        .build();
+                            // Adjust remaining leaves logically:
+                            int leavesUsed = existing.getTotalAllocatedLeaves() - existing.getRemainingLeaves();
+                            int newRemaining = request.totalAllocated() - leavesUsed;
+                            existing.setRemainingLeaves(Math.max(newRemaining, 0));
+
+                            return existing;
+                        })
+                        .orElseGet(() -> {
+                            log.info("Creating new leave allocation for empId={} year={} type={}", empId, request.year(), request.leaveType());
+                            return LeaveAllocation.builder()
+                                    .empId(empId)
+                                    .leaveType(request.leaveType())
+                                    .year(request.year())
+                                    .totalAllocatedLeaves(request.totalAllocated())
+                                    .remainingLeaves(request.totalAllocated())
+                                    .build();
+                        });
 
                 LeaveAllocation saved = leaveAllocationRepository.save(allocation);
                 responseList.add(LeaveAllocationMapper.toResponse(saved));
 
-                log.info("Allocated leave for empId={}", empId);
-
-            } catch (ResourceNotFoundException | ResourceAlreadyExistsException ex) {
+            } catch (ResourceNotFoundException ex) {
                 log.warn("Skipping leave allocation for empId={}: {}", empId, ex.getMessage());
             } catch (Exception ex) {
                 log.error("Unexpected error allocating leave for empId={}: {}", empId, ex.getMessage(), ex);
             }
         }
 
-        log.info("Bulk leave allocation completed. Total successful allocations: {}", responseList.size());
+        log.info("Bulk leave allocation/update completed. Total processed: {}", responseList.size());
         return responseList;
     }
 
-
+    @Override
+    public List<LeaveAllocationResponse> allocateLeaveToAnEmployee(EmployeeLeaveAllocationRequest request) {
+        log.info("Allocating leave for empId={}, {}", request.empId(), request);
+        List<LeaveAllocationResponse> responses = new ArrayList<>();
+        for (EmployeeLeaveAllocationRequest.LeaveAllocationEntry entry : request.allocations()) {
+            CreateLeaveAllocationRequest singleRequest = new CreateLeaveAllocationRequest(
+                    request.empId(),
+                    entry.leaveType(),
+                    LocalDate.now().getYear(),
+                    entry.days()
+            );
+            responses.add(this.allocateLeave(singleRequest));
+        }
+        return responses;
+    }
+    
 }

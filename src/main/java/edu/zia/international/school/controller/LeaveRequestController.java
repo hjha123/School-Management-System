@@ -1,9 +1,7 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.leave.CreateLeaveRequest;
-import edu.zia.international.school.dto.leave.LeaveBalanceResponse;
-import edu.zia.international.school.dto.leave.LeaveRequestResponse;
-import edu.zia.international.school.dto.leave.UpdateLeaveStatusRequest;
+import edu.zia.international.school.dto.leave.*;
+import edu.zia.international.school.enums.LeaveType;
 import edu.zia.international.school.service.LeaveRequestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/leaves")
@@ -113,5 +113,22 @@ public class LeaveRequestController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/types")
+    public ResponseEntity<List<LeaveTypeResponse>> getAllLeaveTypes() {
+        log.info("Fetching all leaves types");
+        List<LeaveTypeResponse> types = Arrays.stream(LeaveType.values())
+                .map(type -> new LeaveTypeResponse(
+                        type.name(),
+                        toDisplayName(type.name())
+                ))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(types);
+    }
+
+    // Optional helper to format enum names
+    private String toDisplayName(String name) {
+        return name.charAt(0) + name.substring(1).toLowerCase().replace("_", " ");
+    }
 
 }
