@@ -41,16 +41,18 @@ public class LeaveAllocationServiceImpl implements LeaveAllocationService {
                 LeaveAllocation allocation = leaveAllocationRepository
                         .findByEmpIdAndLeaveTypeAndYear(empId, request.leaveType(), request.year())
                         .map(existing -> {
-                            log.info("Updating existing leave allocation for empId={} year={} type={}", empId, request.year(), request.leaveType());
+                            log.info("Updating existing leave allocation for empId={} year={} type={}",
+                                    empId, request.year(), request.leaveType());
 
-                            // Calculate leaves used based on old allocation
+                            // Leaves already used from the previous allocation
                             int leavesUsed = existing.getTotalAllocatedLeaves() - existing.getRemainingLeaves();
 
-                            // Update total allocated
-                            existing.setTotalAllocatedLeaves(request.totalAllocated());
+                            // Add the new allocation to the old total
+                            int updatedTotal = existing.getTotalAllocatedLeaves() + request.totalAllocated();
+                            existing.setTotalAllocatedLeaves(updatedTotal);
 
-                            // Adjust remaining logically
-                            int newRemaining = request.totalAllocated() - leavesUsed;
+                            // Recalculate remaining = updated total - leaves used
+                            int newRemaining = updatedTotal - leavesUsed;
                             existing.setRemainingLeaves(Math.max(newRemaining, 0));
 
                             return existing;
