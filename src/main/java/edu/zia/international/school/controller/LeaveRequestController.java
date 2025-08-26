@@ -25,7 +25,7 @@ public class LeaveRequestController {
     /**
      * 🧑‍🏫 Teacher applies for leave.
      */
-    @PostMapping
+    @PostMapping("/apply")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<LeaveRequestResponse> applyForLeave(@Valid @RequestBody CreateLeaveRequest request) {
         log.info("Teacher [{}] applying for leave of type [{}] from {} to {}",

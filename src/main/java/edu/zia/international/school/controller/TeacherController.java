@@ -1,9 +1,6 @@
 package edu.zia.international.school.controller;
 
-import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
-import edu.zia.international.school.dto.teacher.PartialUpdateTeacherRequest;
-import edu.zia.international.school.dto.teacher.TeacherResponse;
-import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
+import edu.zia.international.school.dto.teacher.*;
 import edu.zia.international.school.service.TeacherService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -110,6 +107,14 @@ public class TeacherController {
         String username = authentication.getName();
         log.info("Fetching profile for logged-in teacher [{}] to update his/her profile", username);
         return ResponseEntity.ok(teacherService.partialUpdateByUsername(username, request));
+    }
+
+    @GetMapping("/myDetails")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<CurrentUserResponse> getMyDetails(Authentication authentication) {
+        String username = authentication.getName();
+        log.info("Fetching emp id & name for logged-in teacher: {}", username);
+        return ResponseEntity.ok(teacherService.getEmpIdAndName(username));
     }
 
 }

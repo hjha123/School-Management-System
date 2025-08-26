@@ -1,9 +1,6 @@
 package edu.zia.international.school.service.impl;
 
-import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
-import edu.zia.international.school.dto.teacher.PartialUpdateTeacherRequest;
-import edu.zia.international.school.dto.teacher.TeacherResponse;
-import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
+import edu.zia.international.school.dto.teacher.*;
 import edu.zia.international.school.entity.*;
 import edu.zia.international.school.enums.TeacherStatus;
 import edu.zia.international.school.exception.ResourceNotFoundException;
@@ -526,6 +523,18 @@ public class TeacherServiceImpl implements TeacherService {
 
         TeacherResponse res = new TeacherResponse();
         BeanUtils.copyProperties(updatedTeacher, res);
+        return res;
+    }
+
+    @Override
+    public CurrentUserResponse getEmpIdAndName(String username) {
+        log.info("Fetching current logged in user emp id & name with username: {}", username);
+        Teacher teacher = teacherRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Teacher not found with username: " + username));
+
+        CurrentUserResponse res = new CurrentUserResponse();
+        res.setEmployeeId(teacher.getEmpId());
+        res.setFullName(teacher.getFullName());
         return res;
     }
 
