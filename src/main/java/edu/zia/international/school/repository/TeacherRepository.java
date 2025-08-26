@@ -16,6 +16,7 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     @Query("SELECT COUNT(t) FROM Teacher t WHERE YEAR(t.joiningDate) = :year")
     long countByJoiningYear(@Param("year") int year);
     Optional<Teacher> findByEmpId(String empId);
+    Optional<Teacher> findByUsername(String username);
 
 }
 

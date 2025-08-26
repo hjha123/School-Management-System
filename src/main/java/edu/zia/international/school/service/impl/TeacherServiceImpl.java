@@ -1,6 +1,7 @@
 package edu.zia.international.school.service.impl;
 
 import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
+import edu.zia.international.school.dto.teacher.PartialUpdateTeacherRequest;
 import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
 import edu.zia.international.school.entity.*;
@@ -488,6 +489,46 @@ public class TeacherServiceImpl implements TeacherService {
             throw new RuntimeException("Failed to upload image", e);
         }
     }
+
+    @Override
+    public TeacherResponse getTeacherByUsername(String username) {
+      log.info("Fetching teacher with username: {}", username);
+        Teacher teacher = teacherRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Teacher not found with username: " + username));
+
+        TeacherResponse res = new TeacherResponse();
+        BeanUtils.copyProperties(teacher, res);
+        res.setSubjects(teacher.getSubjects().stream()
+                .map(Subject::getName).collect(Collectors.toList()));
+        return res;
+    }
+
+    @Override
+    @Transactional
+    public TeacherResponse partialUpdateByUsername(String username, PartialUpdateTeacherRequest request) {
+        Teacher teacher = teacherRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Teacher not found with username: " + username));
+
+        log.info("Updating teacher with username: {}", username);
+
+        // Update simple fields
+        teacher.setExperienceYears(request.getExperienceYears());
+        teacher.setMaritalStatus(request.getMaritalStatus());
+        teacher.setEmergencyContactInfo(request.getEmergencyContactInfo());
+        teacher.setBloodGroup(request.getBloodGroup());
+        teacher.setNationality(request.getNationality());
+        teacher.setAadharNumber(normalizeEmptyToNull(request.getAadharNumber()));
+        teacher.setAddress(request.getAddress());
+
+
+        Teacher updatedTeacher = teacherRepository.save(teacher);
+        log.info("Teacher with username {} updated successfully", username);
+
+        TeacherResponse res = new TeacherResponse();
+        BeanUtils.copyProperties(updatedTeacher, res);
+        return res;
+    }
+
 
     private void sendWelcomeEmail(String toEmail, String fullName, String username, String tempPassword, String empId) {
         String subject = "Welcome to ZIA International School";

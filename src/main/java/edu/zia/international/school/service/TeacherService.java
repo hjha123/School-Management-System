@@ -2,6 +2,7 @@ package edu.zia.international.school.service;
 
 
 import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
+import edu.zia.international.school.dto.teacher.PartialUpdateTeacherRequest;
 import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +19,8 @@ public interface TeacherService {
     void deleteTeacherByEmpId(String empId);
     TeacherResponse updateTeacherByEmpId(String empId, UpdateTeacherRequest request);
     TeacherResponse uploadProfileImage(String empId, MultipartFile imageFile);
+    TeacherResponse getTeacherByUsername(String username);
+    TeacherResponse partialUpdateByUsername(String username, PartialUpdateTeacherRequest request);
 
 }
 

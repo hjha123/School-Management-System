@@ -1,6 +1,7 @@
 package edu.zia.international.school.controller;
 
 import edu.zia.international.school.dto.teacher.CreateTeacherRequest;
+import edu.zia.international.school.dto.teacher.PartialUpdateTeacherRequest;
 import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.dto.teacher.UpdateTeacherRequest;
 import edu.zia.international.school.service.TeacherService;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -93,6 +95,23 @@ public class TeacherController {
         log.info("Profile image uploaded successfully for empId: {}", empId);
         return ResponseEntity.ok(updated);
     }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<TeacherResponse> getMyProfile(Authentication authentication) {
+        String username = authentication.getName();
+        log.info("Fetching profile for logged-in teacher: {}", username);
+        return ResponseEntity.ok(teacherService.getTeacherByUsername(username));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<TeacherResponse> updateMyProfile(Authentication authentication,
+                                                           @RequestBody PartialUpdateTeacherRequest request) {
+        String username = authentication.getName();
+        log.info("Fetching profile for logged-in teacher [{}] to update his/her profile", username);
+        return ResponseEntity.ok(teacherService.partialUpdateByUsername(username, request));
+    }
+
 }
 
 
