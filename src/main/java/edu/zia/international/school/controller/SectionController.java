@@ -33,7 +33,7 @@ public class SectionController {
 
     // ✅ Get all sections for a specific grade
     @GetMapping("/grade/{gradeId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<SectionResponse>> getSectionsByGrade(@PathVariable Long gradeId) {
         log.info("Fetching sections for Grade ID: {}", gradeId);
         return ResponseEntity.ok(sectionService.getSectionsByGradeId(gradeId));
@@ -53,7 +53,7 @@ public class SectionController {
     }
 
     @GetMapping("/grade/{gradeName}/simple")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<SimpleSectionResponse>> getSimpleSectionsByGrade(@PathVariable String gradeName) {
         log.info("Fetching simple section list for Grade: {}", gradeName);
         List<SimpleSectionResponse> sections = sectionService.getSimpleSectionsByGradeName(gradeName);
