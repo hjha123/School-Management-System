@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,7 +45,7 @@ public class StudentController {
     }
 
     // Admin can view any student, student can view only their own
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
     @GetMapping("/{studentId}")
     public ResponseEntity<StudentResponse> getStudentById(@PathVariable String studentId) {
         logger.info("Fetching student with ID: {}", studentId);
@@ -84,5 +85,15 @@ public class StudentController {
         StudentResponse updated = studentService.uploadProfileImage(studentId, imageFile);
         logger.info("Profile image uploaded successfully for studentId: {}", studentId);
         return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<StudentResponse> getMyProfile(Authentication authentication) {
+        String username = authentication.getName();
+        logger.info("Fetching profile for logged-in student: {}", username);
+
+        StudentResponse studentProfile = studentService.getStudentByUsername(username);
+        return ResponseEntity.ok(studentProfile);
     }
 }

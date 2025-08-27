@@ -2,7 +2,6 @@ package edu.zia.international.school.service.impl;
 
 import edu.zia.international.school.dto.student.CreateStudentRequest;
 import edu.zia.international.school.dto.student.StudentResponse;
-import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.entity.*;
 import edu.zia.international.school.enums.StudentStatus;
 import edu.zia.international.school.exception.ResourceNotFoundException;
@@ -285,6 +284,15 @@ public class StudentServiceImpl implements StudentService {
             log.error("Failed to upload image for studentId: {}", studentId, e);
             throw new RuntimeException("Failed to upload image", e);
         }
+    }
+
+    @Override
+    public StudentResponse getStudentByUsername(String username) {
+        Student student = studentRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Student not found with username: " + username));
+
+        return mapToResponse(student);
     }
 
     // ---------------- Utility Methods ----------------

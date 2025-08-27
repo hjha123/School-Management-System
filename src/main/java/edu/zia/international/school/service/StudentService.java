@@ -20,4 +20,6 @@ public interface StudentService {
     void deleteStudent(String studentId);
 
     StudentResponse uploadProfileImage(String studentId, MultipartFile imageFile);
+
+    StudentResponse getStudentByUsername(String username);
 }
