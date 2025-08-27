@@ -176,26 +176,48 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 .toList();
     }
 
+    @Override
     public List<LeaveEntitlementResponse> getMyLeaveEntitlements() {
+        log.info("Fetching leave entitlements for current teacher");
+
         // Get currently logged-in username (empId)
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Logged-in username: {}", username);
 
         Teacher teacher = teacherRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+                .orElseThrow(() -> {
+                    log.error("Teacher not found for username: {}", username);
+                    return new RuntimeException("Teacher not found");
+                });
+
+        log.info("Teacher found: {} ({})", teacher.getFullName(), teacher.getEmpId());
 
         int currentYear = Year.now().getValue();
+        log.info("Fetching leave allocations for year: {}", currentYear);
 
         List<LeaveAllocation> allocations = leaveAllocationRepository
                 .findByEmpIdAndYear(teacher.getEmpId(), currentYear);
 
-        return allocations.stream()
-                .map(a -> LeaveEntitlementResponse.builder()
-                        .leaveType(a.getLeaveType())
-                        .totalAllocated(a.getTotalAllocatedLeaves())
-                        .usedLeaves(a.getTotalAllocatedLeaves() - a.getRemainingLeaves())
-                        .remainingLeaves(a.getRemainingLeaves())
-                        .build())
+        log.info("Found {} leave allocations for teacher {}", allocations.size(), teacher.getEmpId());
+
+        List<LeaveEntitlementResponse> responses = allocations.stream()
+                .map(a -> {
+                    int usedLeaves = a.getTotalAllocatedLeaves() - a.getRemainingLeaves();
+                    log.debug("LeaveType: {}, Total: {}, Used: {}, Remaining: {}",
+                            a.getLeaveType(), a.getTotalAllocatedLeaves(), usedLeaves, a.getRemainingLeaves());
+
+                    return LeaveEntitlementResponse.builder()
+                            .leaveType(a.getLeaveType())
+                            .totalAllocated(a.getTotalAllocatedLeaves())
+                            .usedLeaves(usedLeaves)
+                            .remainingLeaves(a.getRemainingLeaves())
+                            .build();
+                })
                 .collect(Collectors.toList());
+
+        log.info("Returning {} leave entitlement records", responses.size());
+        return responses;
     }
+
 
 }

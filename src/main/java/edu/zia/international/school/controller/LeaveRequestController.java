@@ -130,9 +130,14 @@ public class LeaveRequestController {
     @GetMapping("/my-entitlements")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<List<LeaveEntitlementResponse>> getMyEntitlements() {
+        log.info("Received request to fetch leave entitlements for logged-in teacher");
+
         List<LeaveEntitlementResponse> entitlements = leaveRequestService.getMyLeaveEntitlements();
+
+        log.info("Returning {} leave entitlement records", entitlements.size());
         return ResponseEntity.ok(entitlements);
     }
+
 
 
     // Optional helper to format enum names
