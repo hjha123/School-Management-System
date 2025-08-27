@@ -1,6 +1,7 @@
 package edu.zia.international.school.exception;
 
 import edu.zia.international.school.dto.ErrorResponse;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +15,41 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Map<String, String> UNIQUE_CONSTRAINTS;
+
+    static {
+        UNIQUE_CONSTRAINTS = new HashMap<>();
+        UNIQUE_CONSTRAINTS.put("students.UK4j48kma5fa3dcya13gd0l3gi", "phone");
+        UNIQUE_CONSTRAINTS.put("students.UKe7x6xyz123abc", "email");
+        UNIQUE_CONSTRAINTS.put("students.UKusername", "username");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Validation Error");
+
+        String message = ex.getMostSpecificCause().getMessage();
+
+        // Default
+        String userMessage = "Duplicate value exists.";
+
+        // Match known constraints
+        for (Map.Entry<String, String> entry : UNIQUE_CONSTRAINTS.entrySet()) {
+            if (message.contains(entry.getKey())) {
+                userMessage = entry.getValue() + " already exists.";
+                break;
+            }
+        }
+
+        errorResponse.put("message", userMessage);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFound(ResourceNotFoundException ex) {

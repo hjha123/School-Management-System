@@ -45,8 +45,7 @@ public class Student {
 
     @Column(nullable = false)
     private String gradeName;
-
-    @Column(nullable = false)
+    
     private String sectionName;
 
     private String address;

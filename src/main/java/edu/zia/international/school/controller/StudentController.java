@@ -3,6 +3,7 @@ package edu.zia.international.school.controller;
 import edu.zia.international.school.dto.student.CreateStudentRequest;
 import edu.zia.international.school.dto.student.StudentResponse;
 import edu.zia.international.school.service.StudentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ public class StudentController {
     // Only Admin can create students
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<StudentResponse> createStudent(@RequestBody CreateStudentRequest request) {
+    public ResponseEntity<StudentResponse> createStudent(@Valid @RequestBody CreateStudentRequest request) {
         logger.info("Received request to create student: {} {}", request.getFirstName(), request.getLastName());
         StudentResponse response = studentService.createStudent(request);
         logger.info("Student created successfully with ID: {}", response.getStudentId());
