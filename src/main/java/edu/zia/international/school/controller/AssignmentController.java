@@ -37,6 +37,21 @@ public class AssignmentController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('TEACHER')")
+    @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<AssignmentResponse> updateAssignment(
+            @PathVariable Long id,
+            @RequestPart("request") UpdateAssignmentRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            Authentication authentication) {
+
+        String teacherId = authentication.getName();
+        logger.info("Teacher {} updating assignment with ID {}", teacherId, id);
+
+        AssignmentResponse response = assignmentService.updateAssignment(id, request, files, teacherId);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<AssignmentResponse> getAssignmentById(@PathVariable Long id) {
         logger.info("Received request to get assignment by id={}", id);
@@ -82,5 +97,12 @@ public class AssignmentController {
             @RequestBody SubmissionUpdateRequest request) {
         logger.info("Updating submission for assignment {} student {}", assignmentId, studentId);
         return ResponseEntity.ok(assignmentService.updateSubmissionStatus(assignmentId, studentId, request.getMarks(), request.getFeedback()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteAssignment(@PathVariable Long id) {
+        logger.info("Request received to delete assignment with id {}", id);
+        assignmentService.deleteAssignment(id);
+        return ResponseEntity.ok("Assignment deleted successfully.");
     }
 }

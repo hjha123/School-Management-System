@@ -33,6 +33,7 @@ public class Assignment {
     private String createdByTeacherId;
 
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
     private List<AssignmentSubmission> submissions;

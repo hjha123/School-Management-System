@@ -12,4 +12,6 @@ public interface AssignmentService {
     List<AssignmentSubmissionResponse> getSubmissions(Long assignmentId);
     AssignmentSubmissionResponse updateSubmissionStatus(Long assignmentId, String studentId, Double marks, String feedback);
     AssignmentResponse getAssignmentById(Long id);
+    void deleteAssignment(Long id);
+    AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request, List<MultipartFile> files, String teacherId);
 }

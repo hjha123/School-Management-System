@@ -10,6 +10,7 @@ import edu.zia.international.school.service.AssignmentService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -145,6 +146,82 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         return mapToResponse(assignment);
     }
+
+    @Override
+    public void deleteAssignment(Long id) {
+        logger.info("Deleting assignment with id {}", id);
+
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found with id: " + id));
+
+        assignmentRepository.delete(assignment);
+
+        logger.info("Successfully deleted assignment with id {}", id);
+    }
+
+    @Override
+    @Transactional
+    public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request,
+                                               List<MultipartFile> files, String teacherId) {
+        logger.info("Updating assignment ID {} by teacher {}", id, teacherId);
+
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> {
+                    logger.error("Assignment with ID {} not found", id);
+                    return new ResourceNotFoundException("Assignment not found with id: " + id);
+                });
+
+        // Ensure only the creator can update
+        if (!assignment.getCreatedByTeacherId().equals(teacherId)) {
+            logger.error("Teacher {} attempted to update assignment {} created by another teacher", teacherId, id);
+            throw new AccessDeniedException("You are not allowed to update this assignment");
+        }
+
+        // 🔹 Validate due date
+        if (request.getDueDate() != null && !request.getDueDate().isAfter(LocalDateTime.now())) {
+            logger.error("Invalid due date {} for assignment {}. Must be a future date.",
+                    request.getDueDate(), id);
+            throw new IllegalArgumentException("Due date must be a future date");
+        }
+
+        // Update fields
+        if (request.getTitle() != null) assignment.setTitle(request.getTitle());
+        if (request.getDescription() != null) assignment.setDescription(request.getDescription());
+        if (request.getDueDate() != null) assignment.setDueDate(request.getDueDate());
+        if (request.getGradeId() != null) assignment.setGradeId(request.getGradeId());
+        if (request.getSectionId() != null) assignment.setSectionId(request.getSectionId());
+
+        // Handle file uploads (append new files if any)
+        if (files != null && !files.isEmpty()) {
+            List<String> fileUrls = new ArrayList<>(assignment.getAttachments() != null
+                    ? assignment.getAttachments() : new ArrayList<>());
+
+            for (MultipartFile file : files) {
+                try {
+                    String uploadDir = "uploads/assignments/";
+                    File dir = new File(uploadDir);
+                    if (!dir.exists()) dir.mkdirs();
+
+                    String filePath = uploadDir + UUID.randomUUID() + "_" + file.getOriginalFilename();
+                    file.transferTo(new File(filePath));
+                    fileUrls.add(filePath);
+
+                    logger.info("File '{}' uploaded successfully for assignment {}", file.getOriginalFilename(), id);
+                } catch (Exception e) {
+                    logger.error("Error saving file '{}' for assignment {}", file.getOriginalFilename(), id, e);
+                    throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), e);
+                }
+            }
+            assignment.setAttachments(fileUrls);
+        }
+
+        assignment.setUpdatedAt(LocalDateTime.now());
+        Assignment updated = assignmentRepository.save(assignment);
+
+        logger.info("Assignment ID {} updated successfully", updated.getId());
+        return mapToResponse(updated);
+    }
+
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
         AssignmentResponse response = new AssignmentResponse();
