@@ -14,5 +14,6 @@ public record LeaveRequestResponse(
         LocalDate endDate,
         String reason,
         LeaveStatus status,
-        String adminRemarks
+        String adminRemarks,
+        LocalDate appliedOn
 ) {}

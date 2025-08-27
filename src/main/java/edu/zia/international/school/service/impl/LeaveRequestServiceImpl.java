@@ -14,10 +14,12 @@ import edu.zia.international.school.repository.TeacherRepository;
 import edu.zia.international.school.service.LeaveRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +63,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         leaveRequest.setEndDate(request.endDate());
         leaveRequest.setReason(request.reason());
         leaveRequest.setStatus(LeaveStatus.PENDING);
+        leaveRequest.setAppliedOn(LocalDate.now());
 
         LeaveRequest saved = leaveRequestRepository.save(leaveRequest);
         log.info("Leave request submitted successfully for empId: {} with ID: {}", request.empId(), saved.getId());
@@ -157,6 +160,42 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
                 currentYear,
                 leaveBalances
         );
+    }
+
+    @Override
+    public List<LeaveRequestResponse> getMyLeaveRequests(String username) {
+        log.info("Fetching leave requests for teacher: {}", username);
+
+        Teacher teacher = teacherRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found for username: " + username));
+
+        List<LeaveRequest> requests = leaveRequestRepository.findByEmpId(teacher.getEmpId());
+
+        return requests.stream()
+                .map(leaveRequestMapper::toResponse)
+                .toList();
+    }
+
+    public List<LeaveEntitlementResponse> getMyLeaveEntitlements() {
+        // Get currently logged-in username (empId)
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Teacher teacher = teacherRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+        int currentYear = Year.now().getValue();
+
+        List<LeaveAllocation> allocations = leaveAllocationRepository
+                .findByEmpIdAndYear(teacher.getEmpId(), currentYear);
+
+        return allocations.stream()
+                .map(a -> LeaveEntitlementResponse.builder()
+                        .leaveType(a.getLeaveType())
+                        .totalAllocated(a.getTotalAllocatedLeaves())
+                        .usedLeaves(a.getTotalAllocatedLeaves() - a.getRemainingLeaves())
+                        .remainingLeaves(a.getRemainingLeaves())
+                        .build())
+                .collect(Collectors.toList());
     }
 
 }

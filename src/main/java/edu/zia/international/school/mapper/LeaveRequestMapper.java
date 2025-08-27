@@ -30,7 +30,8 @@ public class LeaveRequestMapper {
                 entity.getEndDate(),
                 entity.getReason(),
                 entity.getStatus(),
-                entity.getAdminRemarks()
+                entity.getAdminRemarks(),
+                entity.getAppliedOn()
         );
     }
 }

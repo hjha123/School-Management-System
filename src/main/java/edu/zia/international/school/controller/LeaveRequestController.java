@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -71,13 +72,13 @@ public class LeaveRequestController {
         return ResponseEntity.ok(responses);
     }
 
-
-    @GetMapping("/my-requests")
+    @GetMapping("/my-leave-requests")
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<List<LeaveRequestResponse>> getMyLeaveRequests(@PathVariable String empId/*@AuthenticationPrincipal Jwt principal*/) {
-        log.info("Teacher fetching own leave requests for empId: {}", empId);
-        List<LeaveRequestResponse> responses = leaveRequestService.getLeaveRequestsByEmpId(empId);
-        return ResponseEntity.ok(responses);
+    public ResponseEntity<List<LeaveRequestResponse>> getMyLeaveRequests(Authentication authentication) {
+        String username = authentication.getName();
+        log.info("Fetching leave requests for teacher [{}]", username);
+        List<LeaveRequestResponse> leaves = leaveRequestService.getMyLeaveRequests(username);
+        return ResponseEntity.ok(leaves);
     }
 
     /**
@@ -125,6 +126,14 @@ public class LeaveRequestController {
 
         return ResponseEntity.ok(types);
     }
+
+    @GetMapping("/my-entitlements")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<LeaveEntitlementResponse>> getMyEntitlements() {
+        List<LeaveEntitlementResponse> entitlements = leaveRequestService.getMyLeaveEntitlements();
+        return ResponseEntity.ok(entitlements);
+    }
+
 
     // Optional helper to format enum names
     private String toDisplayName(String name) {

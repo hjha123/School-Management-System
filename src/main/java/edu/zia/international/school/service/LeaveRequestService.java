@@ -1,10 +1,7 @@
 package edu.zia.international.school.service;
 
 
-import edu.zia.international.school.dto.leave.CreateLeaveRequest;
-import edu.zia.international.school.dto.leave.LeaveBalanceResponse;
-import edu.zia.international.school.dto.leave.LeaveRequestResponse;
-import edu.zia.international.school.dto.leave.UpdateLeaveStatusRequest;
+import edu.zia.international.school.dto.leave.*;
 
 import java.util.List;
 
@@ -15,4 +12,8 @@ public interface LeaveRequestService {
     List<LeaveRequestResponse> getAllPendingLeaveRequests();
     List<LeaveRequestResponse> getAllLeaveRequests();
     LeaveBalanceResponse getLeaveBalanceByEmpId(String empId);
+
+    List<LeaveRequestResponse> getMyLeaveRequests(String username);
+
+    List<LeaveEntitlementResponse> getMyLeaveEntitlements();
 }

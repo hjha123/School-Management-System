@@ -4,7 +4,10 @@ import edu.zia.international.school.enums.LeaveStatus;
 import edu.zia.international.school.enums.LeaveType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "leave_requests")
@@ -41,5 +44,7 @@ public class LeaveRequest {
     private LeaveStatus status;
 
     private String adminRemarks;
+    @Column(name = "applied_on", nullable = false, updatable = false)
+    private LocalDate appliedOn;
 
 }
