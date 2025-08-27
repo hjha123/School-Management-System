@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class StudentController {
     }
 
     // Admin can view all students, students can view their own info
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STUDENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<List<StudentResponse>> getAllStudents() {
         logger.info("Fetching all students");
@@ -43,7 +44,7 @@ public class StudentController {
     }
 
     // Admin can view any student, student can view only their own
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('STUDENT') and #studentId == principal.studentId)")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{studentId}")
     public ResponseEntity<StudentResponse> getStudentById(@PathVariable String studentId) {
         logger.info("Fetching student with ID: {}", studentId);
@@ -73,5 +74,15 @@ public class StudentController {
         studentService.deleteStudent(studentId);
         logger.info("Student deleted successfully with ID: {}", studentId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{studentId}/upload-profile-image")
+    public ResponseEntity<StudentResponse> uploadProfileImage(
+            @PathVariable String studentId,
+            @RequestParam("image") MultipartFile imageFile) {
+        logger.info("Received request to upload profile image for studentId: {}", studentId);
+        StudentResponse updated = studentService.uploadProfileImage(studentId, imageFile);
+        logger.info("Profile image uploaded successfully for studentId: {}", studentId);
+        return ResponseEntity.ok(updated);
     }
 }

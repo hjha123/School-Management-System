@@ -2,20 +2,30 @@ package edu.zia.international.school.service.impl;
 
 import edu.zia.international.school.dto.student.CreateStudentRequest;
 import edu.zia.international.school.dto.student.StudentResponse;
+import edu.zia.international.school.dto.teacher.TeacherResponse;
 import edu.zia.international.school.entity.*;
 import edu.zia.international.school.enums.StudentStatus;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.repository.*;
 import edu.zia.international.school.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Random;
@@ -24,6 +34,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class StudentServiceImpl implements StudentService {
 
     private static final String ROLE_NAME = "STUDENT";
@@ -152,24 +163,51 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public StudentResponse updateStudent(String studentId, CreateStudentRequest request) {
         logger.info("Updating student with ID: {}", studentId);
-        Student student = studentRepository.findByStudentId(studentId)
-                .orElseThrow(() -> {
-                    logger.error("Student not found for update with ID: {}", studentId);
-                    return new ResourceNotFoundException("Student not found with ID: " + studentId);
-                });
 
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + studentId));
+
+        // Update primitive fields
         student.setFirstName(request.getFirstName());
         student.setLastName(request.getLastName());
         student.setEmail(request.getEmail());
         student.setPhone(request.getPhone());
         student.setGender(request.getGender());
         student.setDateOfBirth(request.getDateOfBirth());
-        student.setGradeName(request.getGradeName());
-        student.setSectionName(request.getSectionName());
         student.setGuardianName(request.getGuardianName());
         student.setGuardianPhone(request.getGuardianPhone());
         student.setAdmissionDate(request.getAdmissionDate());
         student.setStatus(StudentStatus.ACTIVE);
+        student.setAddress(request.getAddress());
+        student.setEmergencyContactName(request.getEmergencyContactName());
+        student.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        student.setBloodGroup(request.getBloodGroup());
+        student.setNationality(request.getNationality());
+
+        // 🔹 Resolve Grade entity
+        Grade grade = null;
+        if (request.getGradeName() != null && !request.getGradeName().isBlank()) {
+            grade = gradeRepository.findByNameIgnoreCase(request.getGradeName())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found: " + request.getGradeName()));
+            student.setGrade(grade);
+            student.setGradeName(grade.getName());
+        } else {
+            student.setGrade(null);
+            student.setGradeName(null);
+        }
+
+        // 🔹 Resolve Section entity
+        Section section = null;
+        if (grade != null && request.getSectionName() != null && !request.getSectionName().isBlank()) {
+            section = sectionRepository.findByGradeAndNameIgnoreCase(grade, request.getSectionName())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Section '" + request.getSectionName() + "' not found in grade " + request.getGradeName()));
+            student.setSection(section);
+            student.setSectionName(section.getName());
+        } else {
+            student.setSection(null);
+            student.setSectionName(null);
+        }
 
         Student updatedStudent = studentRepository.save(student);
         logger.info("Student updated successfully: {} {}", updatedStudent.getFirstName(), updatedStudent.getLastName());
@@ -177,16 +215,76 @@ public class StudentServiceImpl implements StudentService {
         return mapToResponse(updatedStudent);
     }
 
+
     @Override
     public void deleteStudent(String studentId) {
-        logger.info("Deleting student with ID: {}", studentId);
+        logger.info("Attempting to delete student with studentId: {}", studentId);
+
+        // Fetch the student
         Student student = studentRepository.findByStudentId(studentId)
                 .orElseThrow(() -> {
                     logger.error("Student not found for delete with ID: {}", studentId);
                     return new ResourceNotFoundException("Student not found with ID: " + studentId);
                 });
+
+        // Delete associated User first if exists
+        if (student.getUser() != null) {
+            logger.info("Deleting associated user with username: {}", student.getUser().getUsername());
+            userRepository.delete(student.getUser());
+            logger.info("Deleted user: {}", student.getUser().getUsername());
+        }
+
+        // Delete the student
         studentRepository.delete(student);
-        logger.info("Student deleted successfully with ID: {}", studentId);
+        logger.info("Deleted student successfully with studentId: {}", studentId);
+    }
+
+
+    @Override
+    public StudentResponse uploadProfileImage(String studentId, MultipartFile imageFile) {
+        log.debug("Starting image upload process for studentId: {}", studentId);
+
+        Student student = studentRepository.findByStudentId(studentId)
+                .orElseThrow(() -> {
+                    log.warn("Student not found for studentId: {}", studentId);
+                    return new ResourceNotFoundException("Student not found with studentId: " + studentId);
+                });
+
+        if (imageFile.isEmpty()) {
+            log.error("Uploaded file is empty for studentId: {}", studentId);
+            throw new IllegalArgumentException("Uploaded image is empty.");
+        }
+
+        try {
+            String uploadsDir = "uploads/";
+            String originalFilename = StringUtils.cleanPath(imageFile.getOriginalFilename());
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String filename = studentId + "_profile" + fileExtension;
+
+            Path uploadPath = Paths.get(uploadsDir);
+            if (!Files.exists(uploadPath)) {
+                log.info("Creating upload directory at: {}", uploadPath.toAbsolutePath());
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(filename);
+            Files.copy(imageFile.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            student.setProfileImageUrl(filename);
+            log.info("Image saved at: {} for studentId: {}", filePath.toAbsolutePath(), studentId);
+
+            Student updatedStudent = studentRepository.save(student);
+            log.debug("Student entity updated with image URL for studentId: {}", studentId);
+
+            StudentResponse response = new StudentResponse();
+            BeanUtils.copyProperties(updatedStudent, response);
+
+            return response;
+
+        } catch (IOException e) {
+            log.error("Failed to upload image for studentId: {}", studentId, e);
+            throw new RuntimeException("Failed to upload image", e);
+        }
     }
 
     // ---------------- Utility Methods ----------------
