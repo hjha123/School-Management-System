@@ -32,6 +32,9 @@ public class Assignment {
 
     private long sectionId;
 
+    private String gradeName;
+    private String sectionName;
+
     private String createdByTeacherId;
 
     private LocalDateTime createdAt;
@@ -47,4 +50,6 @@ public class Assignment {
 
     @Enumerated(EnumType.STRING)
     private AssignmentStatus status;
+
+    private String adminRemarks;
 }

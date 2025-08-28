@@ -16,4 +16,8 @@ public interface AssignmentService {
     AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request, List<MultipartFile> files, String teacherId);
 
     AssignmentResponse closeAssignment(Long id, String teacherId);
+
+    List<AssignmentResponse> getAllAssignmentsAdmin();
+
+    AssignmentResponse updateAdminRemarks(Long id, String adminRemarks);
 }

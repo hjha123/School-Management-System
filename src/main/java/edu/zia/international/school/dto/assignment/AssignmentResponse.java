@@ -23,4 +23,5 @@ public class AssignmentResponse {
     private LocalDateTime updatedAt;
     private List<String> attachments;
     private String status;
+    private String adminRemarks;
 }

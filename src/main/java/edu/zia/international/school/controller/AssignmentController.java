@@ -117,4 +117,26 @@ public class AssignmentController {
         return ResponseEntity.ok(response);
     }
 
+    // Only Admin can view all assignments
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<AssignmentResponse>> getAllAssignmentsAdmin() {
+        logger.info("Admin requested all assignments");
+        List<AssignmentResponse> assignments = assignmentService.getAllAssignmentsAdmin();
+        return ResponseEntity.ok(assignments);
+    }
+
+    // Only Admin can update adminRemarks
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/admin-remarks")
+    public ResponseEntity<AssignmentResponse> updateAdminRemarks(
+            @PathVariable Long id,
+            @RequestBody UpdateAdminRemarkRequest request) {
+
+        logger.info("Admin updating remarks for assignment id={}", id);
+        AssignmentResponse response = assignmentService.updateAdminRemarks(id, request.getAdminRemarks());
+        return ResponseEntity.ok(response);
+    }
+
+
 }

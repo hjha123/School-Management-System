@@ -31,59 +31,62 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final AssignmentSubmissionRepository submissionRepository;
     private final GradeRepository gradeRepository;
     private final SectionRepository sectionRepository;
+    private final TeacherRepository teacherRepository;
     private static final Logger logger = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
     @Override
     @Transactional
     public AssignmentResponse createAssignment(CreateAssignmentRequest request, List<MultipartFile> files, String teacherId) {
-        logger.info("Creating assignment '{}' for Grade {} Section {}",
-                request.getTitle(), request.getGradeId(), request.getSectionId());
 
-        // 🔹 Validate due date
-        if (request.getDueDate() == null) {
-            logger.error("Due date is missing for assignment '{}'", request.getTitle());
-            throw new IllegalArgumentException("Due date cannot be null");
-        }
-        if (!request.getDueDate().isAfter(LocalDate.now())) {
-            logger.error("Invalid due date {} for assignment '{}'. Must be a future date.",
-                    request.getDueDate(), request.getTitle());
-            throw new IllegalArgumentException("Due date must be a future date");
+        // 🔹 Resolve Grade
+        Grade grade = null;
+        String gradeName;
+        if (request.getGradeId() > 0) {
+            grade = gradeRepository.findById(request.getGradeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found with id: " + request.getGradeId()));
+            gradeName = grade.getName();
+        } else {
+            gradeName = null;
         }
 
-        // 🔹 Determine status
-        AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
+        // 🔹 Resolve Section (optional)
+        Section section = null;
+        String sectionName = null;
+        if (grade != null && request.getSectionId() > 0) {
+            section = sectionRepository.findById(request.getSectionId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Section not found with id: " + request.getSectionId() + " in grade " + gradeName));
+            sectionName = section.getName();
+        }
 
-
+        // 🔹 File upload logic (same as before)
         List<String> fileUrls = new ArrayList<>();
-
         if (files != null && !files.isEmpty()) {
             for (MultipartFile file : files) {
                 try {
-                    // 🔹 For now: store locally (later replace with S3 upload)
                     String uploadDir = "uploads/assignments/";
                     File dir = new File(uploadDir);
                     if (!dir.exists()) dir.mkdirs();
 
                     String filePath = uploadDir + UUID.randomUUID() + "_" + file.getOriginalFilename();
                     file.transferTo(new File(filePath));
-
-                    // Save relative path or full URL (later S3 URL)
                     fileUrls.add(filePath);
-
-                    logger.info("File '{}' uploaded successfully", file.getOriginalFilename());
                 } catch (Exception e) {
-                    logger.error("Error saving file: {}", file.getOriginalFilename(), e);
                     throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), e);
                 }
             }
         }
 
+        AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
+
         Assignment assignment = Assignment.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .dueDate(request.getDueDate())
-                .gradeId(request.getGradeId())
-                .sectionId(request.getSectionId())
+                .gradeId(grade != null ? grade.getId() : 0)
+                .sectionId(section != null ? section.getId() : 0)
+                .gradeName(gradeName)
+                .sectionName(sectionName)
                 .createdByTeacherId(teacherId)
                 .createdAt(LocalDateTime.now())
                 .attachments(fileUrls)
@@ -91,8 +94,6 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .build();
 
         Assignment saved = assignmentRepository.save(assignment);
-
-        logger.info("Assignment '{}' created successfully with ID {}", saved.getTitle(), saved.getId());
         return mapToResponse(saved);
     }
 
@@ -189,6 +190,7 @@ public class AssignmentServiceImpl implements AssignmentService {
             throw new IllegalArgumentException("Due date must be a future date");
         }
 
+
         // Update fields
         if (request.getTitle() != null) assignment.setTitle(request.getTitle());
         if (request.getDescription() != null) assignment.setDescription(request.getDescription());
@@ -245,6 +247,67 @@ public class AssignmentServiceImpl implements AssignmentService {
         return mapToResponse(assignmentRepository.save(assignment));
     }
 
+    @Override
+    public List<AssignmentResponse> getAllAssignmentsAdmin() {
+        List<Assignment> allAssignments = assignmentRepository.findAll();
+
+        return allAssignments.stream()
+                .map(a -> {
+                    // Fetch teacher name by username
+                    String teacherName = teacherRepository.findByUsername(a.getCreatedByTeacherId())
+                            .map(Teacher::getFullName)
+                            .orElse(a.getCreatedByTeacherId());
+
+                    return AssignmentResponse.builder()
+                            .id(a.getId())
+                            .title(a.getTitle())
+                            .description(a.getDescription())
+                            .dueDate(a.getDueDate())
+                            .gradeName(a.getGradeName())
+                            .sectionName(a.getSectionName())
+                            .createdByTeacherId(teacherName)
+                            .createdAt(a.getCreatedAt())
+                            .updatedAt(a.getUpdatedAt())
+                            .attachments(a.getAttachments() != null ? a.getAttachments() : List.of())
+                            .status(a.getStatus().name())
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public AssignmentResponse updateAdminRemarks(Long assignmentId, String remarks) {
+        logger.info("Admin updating remarks for assignment with id {}", assignmentId);
+
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> {
+                    logger.error("Assignment not found with id {}", assignmentId);
+                    return new ResourceNotFoundException("Assignment not found with id " + assignmentId);
+                });
+
+        assignment.setAdminRemarks(remarks);
+        assignment.setUpdatedAt(LocalDateTime.now());
+        assignmentRepository.save(assignment);
+
+        logger.info("Updated admin remarks for assignment id={} successfully", assignmentId);
+
+        // Convert to DTO
+        return AssignmentResponse.builder()
+                .id(assignment.getId())
+                .title(assignment.getTitle())
+                .description(assignment.getDescription())
+                .gradeName(assignment.getGradeName())
+                .sectionName(assignment.getSectionName())
+                .createdByTeacherId(assignment.getCreatedByTeacherId())
+                .createdAt(assignment.getCreatedAt())
+                .updatedAt(assignment.getUpdatedAt())
+                .status(assignment.getStatus().name())
+                .adminRemarks(assignment.getAdminRemarks())
+                .attachments(assignment.getAttachments())
+                .build();
+    }
+
 
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
@@ -257,15 +320,16 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setUpdatedAt(assignment.getUpdatedAt());
         response.setStatus(assignment.getStatus().name());
         response.setCreatedByTeacherId(assignment.getCreatedByTeacherId());
+        response.setGradeName(assignment.getGradeName());
+        response.setSectionName(assignment.getSectionName());
 
-        Grade grade = gradeRepository.findById(assignment.getGradeId()).orElse(null);
+        /*Grade grade = gradeRepository.findById(assignment.getGradeId()).orElse(null);
         Section section = sectionRepository.findById(assignment.getSectionId()).orElse(null);
 
         response.setGradeName(grade != null ? grade.getName() : null);
-        response.setSectionName(section != null ? section.getName() : null);
+        response.setSectionName(section != null ? section.getName() : null);*/
 
         return response;
-
     }
 
     private AssignmentSubmissionResponse mapSubmissionToResponse(AssignmentSubmission submission) {
