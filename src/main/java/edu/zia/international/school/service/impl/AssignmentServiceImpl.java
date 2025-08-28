@@ -270,6 +270,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                             .updatedAt(a.getUpdatedAt())
                             .attachments(a.getAttachments() != null ? a.getAttachments() : List.of())
                             .status(a.getStatus().name())
+                            .adminRemarks(a.getAdminRemarks())
                             .build();
                 })
                 .collect(Collectors.toList());
@@ -322,6 +323,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setCreatedByTeacherId(assignment.getCreatedByTeacherId());
         response.setGradeName(assignment.getGradeName());
         response.setSectionName(assignment.getSectionName());
+        response.setAdminRemarks(assignment.getAdminRemarks());
 
         /*Grade grade = gradeRepository.findById(assignment.getGradeId()).orElse(null);
         Section section = sectionRepository.findById(assignment.getSectionId()).orElse(null);

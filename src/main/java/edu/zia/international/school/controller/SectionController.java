@@ -22,7 +22,7 @@ public class SectionController {
     private final SectionService sectionService;
 
     // ✅ Create a new Section under a Grade
-    @PostMapping("createSection")
+    @PostMapping("/createSection")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SectionResponse> createSection(@Valid @RequestBody SectionRequest request) {
         log.info("Creating section '{}' under Grade '{}'", request.getName(), request.getGradeName());

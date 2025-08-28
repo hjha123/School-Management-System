@@ -43,7 +43,7 @@ public class GradeController {
         return ResponseEntity.ok(gradeService.getAllGrades());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{gradeName}")
     public ResponseEntity<Void> deleteGradeByName(@PathVariable String gradeName) {
         log.info("Deleting grade and all related sections for grade: {}", gradeName);

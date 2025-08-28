@@ -27,4 +27,7 @@ public class Section {
 
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
     private List<Teacher> teachers;
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
+    private List<Student> students;
+
 }

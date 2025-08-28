@@ -10,6 +10,7 @@ import edu.zia.international.school.entity.Teacher;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.repository.GradeRepository;
 import edu.zia.international.school.repository.SectionRepository;
+import edu.zia.international.school.repository.StudentRepository;
 import edu.zia.international.school.repository.TeacherRepository;
 import edu.zia.international.school.service.GradeService;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class GradeServiceImpl implements GradeService {
     private final GradeRepository gradeRepository;
 
     private final TeacherRepository teacherRepository;
-
+    private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
 
     @Override
@@ -71,30 +72,43 @@ public class GradeServiceImpl implements GradeService {
         Grade grade = gradeRepository.findByNameIgnoreCase(gradeName)
                 .orElseThrow(() -> new ResourceNotFoundException("Grade not found with name: " + gradeName));
 
-        log.info("Disassociating teachers from sections and grade: {}", gradeName);
+        log.info("Deleting grade and all related sections for grade: {}", gradeName);
 
-        // Disassociate teachers from sections and grade
+        // 1. Disassociate teachers
         for (Section section : grade.getSections()) {
             for (Teacher teacher : section.getTeachers()) {
-                teacher.setSection(null); // Remove section
-                teacher.setGrade(null);   // ✅ Also remove grade
+                teacher.setSection(null);
+                teacher.setGrade(null);
                 teacherRepository.save(teacher);
             }
-
-            log.info("Deleting section: {}", section.getName());
-            sectionRepository.delete(section);
         }
 
-        // Also disassociate teachers directly assigned to this grade (if not already handled above)
         List<Teacher> directTeachers = teacherRepository.findByGrade(grade);
         for (Teacher teacher : directTeachers) {
             teacher.setGrade(null);
             teacherRepository.save(teacher);
         }
 
-        log.info("Deleting grade: {}", gradeName);
+        // 2. Disassociate students
+        for (Section section : grade.getSections()) {
+            section.getStudents().forEach(student -> {
+                student.setSection(null);
+                student.setGrade(null);
+                studentRepository.save(student);
+            });
+        }
+
+        // 3. Delete sections
+        for (Section section : grade.getSections()) {
+            log.info("Deleting section: {}", section.getName());
+            sectionRepository.delete(section);
+        }
+
+        // 4. Delete grade
         gradeRepository.delete(grade);
+        log.info("Deleted grade: {}", gradeName);
     }
+
 
 
     @Override

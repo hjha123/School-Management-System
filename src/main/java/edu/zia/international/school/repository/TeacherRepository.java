@@ -1,6 +1,7 @@
 package edu.zia.international.school.repository;
 
 import edu.zia.international.school.entity.Grade;
+import edu.zia.international.school.entity.Section;
 import edu.zia.international.school.entity.Teacher;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +18,7 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     long countByJoiningYear(@Param("year") int year);
     Optional<Teacher> findByEmpId(String empId);
     Optional<Teacher> findByUsername(String username);
+    List<Teacher> findBySection(Section section);
 
 }
 

@@ -1,5 +1,6 @@
 package edu.zia.international.school.repository;
 
+import edu.zia.international.school.entity.Section;
 import edu.zia.international.school.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,5 +13,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     boolean existsByEmail(String email);
     List<Student> findByGradeNameAndSectionName(String gradeName, String sectionName);
     List<Student> findByGradeName(String gradeName);
+    List<Student> findBySectionName(String gradeName);
+    List<Student> findBySection(Section section);
 }
 
