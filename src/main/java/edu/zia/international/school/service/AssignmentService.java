@@ -14,4 +14,6 @@ public interface AssignmentService {
     AssignmentResponse getAssignmentById(Long id);
     void deleteAssignment(Long id);
     AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request, List<MultipartFile> files, String teacherId);
+
+    AssignmentResponse closeAssignment(Long id, String teacherId);
 }

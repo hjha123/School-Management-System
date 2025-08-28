@@ -3,6 +3,8 @@ package edu.zia.international.school.entity;
 import edu.zia.international.school.enums.AssignmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,7 +26,7 @@ public class Assignment {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    private LocalDateTime dueDate;
+    private LocalDate dueDate;
 
     private long gradeId;
 
@@ -44,5 +46,5 @@ public class Assignment {
     private List<String> attachments;
 
     @Enumerated(EnumType.STRING)
-    private AssignmentStatus status = AssignmentStatus.ACTIVE;
+    private AssignmentStatus status;
 }

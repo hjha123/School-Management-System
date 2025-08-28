@@ -105,4 +105,16 @@ public class AssignmentController {
         assignmentService.deleteAssignment(id);
         return ResponseEntity.ok("Assignment deleted successfully.");
     }
+
+    @PreAuthorize("hasRole('TEACHER')")
+    @PutMapping("/{id}/close")
+    public ResponseEntity<AssignmentResponse> closeAssignment(
+            @PathVariable Long id,
+            Authentication authentication) {
+
+        String teacherId = authentication.getName();
+        AssignmentResponse response = assignmentService.closeAssignment(id, teacherId);
+        return ResponseEntity.ok(response);
+    }
+
 }

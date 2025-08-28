@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,11 +44,15 @@ public class AssignmentServiceImpl implements AssignmentService {
             logger.error("Due date is missing for assignment '{}'", request.getTitle());
             throw new IllegalArgumentException("Due date cannot be null");
         }
-        if (!request.getDueDate().isAfter(LocalDateTime.now())) {
+        if (!request.getDueDate().isAfter(LocalDate.now())) {
             logger.error("Invalid due date {} for assignment '{}'. Must be a future date.",
                     request.getDueDate(), request.getTitle());
             throw new IllegalArgumentException("Due date must be a future date");
         }
+
+        // 🔹 Determine status
+        AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
+
 
         List<String> fileUrls = new ArrayList<>();
 
@@ -82,7 +87,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .createdByTeacherId(teacherId)
                 .createdAt(LocalDateTime.now())
                 .attachments(fileUrls)
-                .status(AssignmentStatus.ACTIVE)
+                .status(status)
                 .build();
 
         Assignment saved = assignmentRepository.save(assignment);
@@ -178,7 +183,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         }
 
         // 🔹 Validate due date
-        if (request.getDueDate() != null && !request.getDueDate().isAfter(LocalDateTime.now())) {
+        if (request.getDueDate() != null && !request.getDueDate().isAfter(LocalDate.now())) {
             logger.error("Invalid due date {} for assignment {}. Must be a future date.",
                     request.getDueDate(), id);
             throw new IllegalArgumentException("Due date must be a future date");
@@ -215,12 +220,31 @@ public class AssignmentServiceImpl implements AssignmentService {
             assignment.setAttachments(fileUrls);
         }
 
+        AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
+        assignment.setStatus(status);
         assignment.setUpdatedAt(LocalDateTime.now());
         Assignment updated = assignmentRepository.save(assignment);
 
         logger.info("Assignment ID {} updated successfully", updated.getId());
         return mapToResponse(updated);
     }
+
+    @Override
+    @Transactional
+    public AssignmentResponse closeAssignment(Long id, String teacherId) {
+        Assignment assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
+
+        if (!assignment.getCreatedByTeacherId().equals(teacherId)) {
+            throw new AccessDeniedException("You are not allowed to close this assignment");
+        }
+
+        assignment.setStatus(AssignmentStatus.CLOSED);
+        assignment.setUpdatedAt(LocalDateTime.now());
+
+        return mapToResponse(assignmentRepository.save(assignment));
+    }
+
 
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
@@ -230,6 +254,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setDescription(assignment.getDescription());
         response.setDueDate(assignment.getDueDate());
         response.setCreatedAt(assignment.getCreatedAt());
+        response.setUpdatedAt(assignment.getUpdatedAt());
         response.setStatus(assignment.getStatus().name());
         response.setCreatedByTeacherId(assignment.getCreatedByTeacherId());
 

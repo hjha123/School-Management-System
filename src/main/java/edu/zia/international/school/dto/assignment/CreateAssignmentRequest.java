@@ -1,8 +1,9 @@
 package edu.zia.international.school.dto.assignment;
 
+import edu.zia.international.school.enums.AssignmentStatus;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -12,7 +13,8 @@ import java.time.LocalDateTime;
 public class CreateAssignmentRequest {
     private String title;
     private String description;
-    private LocalDateTime dueDate;
+    private LocalDate dueDate;
     private long gradeId;
     private long sectionId;
+    private AssignmentStatus status;
 }
