@@ -295,6 +295,50 @@ public class StudentServiceImpl implements StudentService {
         return mapToResponse(student);
     }
 
+    @Override
+    public List<StudentResponse> getStudentsByGradeAndSection(String gradeName, String sectionName) {
+        logger.info("Service: Fetching students for Grade '{}' and Section '{}'", gradeName, sectionName);
+
+        List<Student> students;
+
+        if (sectionName == null || sectionName.isEmpty()) {
+            // Section not provided, fetch all students for the grade
+            students = studentRepository.findByGradeName(gradeName);
+            logger.info("No section provided. Fetching all students for grade '{}'", gradeName);
+        } else {
+            // Section provided, fetch specific grade + section
+            students = studentRepository.findByGradeNameAndSectionName(gradeName, sectionName);
+        }
+
+        List<StudentResponse> responses = students.stream().map(student -> StudentResponse.builder()
+                .id(student.getId())
+                .studentId(student.getStudentId())
+                .firstName(student.getFirstName())
+                .lastName(student.getLastName())
+                .email(student.getEmail())
+                .phone(student.getPhone())
+                .gender(student.getGender())
+                .dateOfBirth(student.getDateOfBirth().toString())
+                .gradeName(student.getGradeName())
+                .sectionName(student.getSectionName())
+                .address(student.getAddress())
+                .emergencyContactName(student.getEmergencyContactName())
+                .emergencyContactPhone(student.getEmergencyContactPhone())
+                .bloodGroup(student.getBloodGroup())
+                .nationality(student.getNationality())
+                .profileImageUrl(student.getProfileImageUrl())
+                .username(student.getUsername())
+                .status(student.getStatus().name())
+                .guardianName(student.getGuardianName())
+                .guardianPhone(student.getGuardianPhone())
+                .admissionDate(student.getAdmissionDate())
+                .build()
+        ).collect(Collectors.toList());
+
+        logger.info("Service: Total students fetched: {}", responses.size());
+        return responses;
+    }
+
     // ---------------- Utility Methods ----------------
 
     // ✅ Safe studentId generation

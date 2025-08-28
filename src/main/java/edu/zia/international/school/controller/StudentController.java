@@ -96,4 +96,23 @@ public class StudentController {
         StudentResponse studentProfile = studentService.getStudentByUsername(username);
         return ResponseEntity.ok(studentProfile);
     }
+
+    // 🔹 Fetch all students by grade & section (for assignments submissions)
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @GetMapping("/by-grade-section")
+    public ResponseEntity<List<StudentResponse>> getStudentsByGradeAndSection(
+            @RequestParam String gradeName,
+            @RequestParam(required = false) String sectionName) {
+        logger.info("Fetching students for Grade '{}' and Section '{}'", gradeName, sectionName);
+
+        try {
+            List<StudentResponse> students = studentService.getStudentsByGradeAndSection(gradeName, sectionName);
+            logger.info("Total students fetched: {}", students.size());
+            return ResponseEntity.ok(students);
+        } catch (Exception ex) {
+            logger.error("Error fetching students for Grade '{}' Section '{}': {}", gradeName, sectionName, ex.getMessage(), ex);
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
 }

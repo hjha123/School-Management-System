@@ -22,4 +22,6 @@ public interface StudentService {
     StudentResponse uploadProfileImage(String studentId, MultipartFile imageFile);
 
     StudentResponse getStudentByUsername(String username);
+
+    List<StudentResponse> getStudentsByGradeAndSection(String gradeName, String sectionName);
 }
