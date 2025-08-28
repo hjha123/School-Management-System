@@ -24,4 +24,7 @@ public interface StudentService {
     StudentResponse getStudentByUsername(String username);
 
     List<StudentResponse> getStudentsByGradeAndSection(String gradeName, String sectionName);
+
+    List<StudentResponse> searchStudents(Long gradeId, Long sectionId, String gradeName, String sectionName, String studentId, String name);
+
 }

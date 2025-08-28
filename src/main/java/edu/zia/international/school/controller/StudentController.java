@@ -115,4 +115,29 @@ public class StudentController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @GetMapping("/search")
+    public ResponseEntity<List<StudentResponse>> searchStudents(
+            @RequestParam(required = false) Long gradeId,
+            @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) String gradeName,
+            @RequestParam(required = false) String sectionName,
+            @RequestParam(required = false) String studentId,
+            @RequestParam(required = false) String name) {
+
+        logger.info("Searching students with filters - gradeId: {}, sectionId: {}, gradeName: {}, sectionName: {}, studentId: {}, name: {}",
+                gradeId, sectionId, gradeName, sectionName, studentId, name);
+
+        // If no filters provided
+        if (gradeId == null && sectionId == null &&
+                gradeName == null && sectionName == null &&
+                studentId == null && name == null) {
+            logger.warn("Search request received without any filters");
+            throw new IllegalArgumentException("At least one filter must be provided (gradeId/sectionId/gradeName/sectionName/studentId/name)");
+        }
+
+        List<StudentResponse> students = studentService.searchStudents(gradeId, sectionId, gradeName, sectionName, studentId, name);
+        return ResponseEntity.ok(students);
+    }
+
 }

@@ -5,6 +5,7 @@ import edu.zia.international.school.dto.student.StudentResponse;
 import edu.zia.international.school.entity.*;
 import edu.zia.international.school.enums.StudentStatus;
 import edu.zia.international.school.exception.ResourceNotFoundException;
+import edu.zia.international.school.mapper.StudentMapper;
 import edu.zia.international.school.repository.*;
 import edu.zia.international.school.service.StudentService;
 import lombok.RequiredArgsConstructor;
@@ -338,6 +339,63 @@ public class StudentServiceImpl implements StudentService {
         logger.info("Service: Total students fetched: {}", responses.size());
         return responses;
     }
+
+    @Override
+    public List<StudentResponse> searchStudents(Long gradeId, Long sectionId, String gradeName, String sectionName, String studentId, String name) {
+        try {
+            List<Student> students;
+
+            // 🔹 StudentId has highest priority (unique match)
+            if (studentId != null && !studentId.isEmpty()) {
+                log.debug("Searching by studentId: {}", studentId);
+                return studentRepository.findByStudentId(studentId)
+                        .map(s -> List.of(StudentMapper.toResponse(s)))
+                        .orElse(List.of());
+            }
+
+            // 🔹 Priority: gradeId + sectionId → gradeId → sectionId → gradeName → sectionName
+            if (gradeId != null && sectionId != null) {
+                log.debug("Searching by gradeId: {} and sectionId: {}", gradeId, sectionId);
+                students = studentRepository.findByGradeIdAndSectionId(gradeId, sectionId);
+            } else if (gradeId != null) {
+                log.debug("Searching by gradeId: {}", gradeId);
+                students = studentRepository.findByGradeId(gradeId);
+            } else if (sectionId != null) {
+                log.debug("Searching by sectionId: {}", sectionId);
+                students = studentRepository.findBySectionId(sectionId);
+            } else if (gradeName != null && sectionName != null) {
+                log.debug("Searching by gradeName: {} and sectionName: {}", gradeName, sectionName);
+                students = studentRepository.findByGradeNameAndSectionName(gradeName, sectionName);
+            } else if (gradeName != null) {
+                log.debug("Searching by gradeName: {}", gradeName);
+                students = studentRepository.findByGradeName(gradeName);
+            } else if (sectionName != null) {
+                log.debug("Searching by sectionName: {}", sectionName);
+                students = studentRepository.findBySectionName(sectionName);
+            } else {
+                log.debug("Fetching all students (no grade/section filters)");
+                students = studentRepository.findAll();
+            }
+
+            // 🔹 Apply name filter if provided
+            if (name != null && !name.isEmpty()) {
+                String lowerName = name.toLowerCase();
+                students = students.stream()
+                        .filter(s -> (s.getFirstName() + " " + s.getLastName())
+                                .toLowerCase().contains(lowerName))
+                        .toList();
+            }
+
+            return students.stream()
+                    .map(StudentMapper::toResponse)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error while searching students", e);
+            throw new RuntimeException("Error while searching students", e);
+        }
+    }
+
 
     // ---------------- Utility Methods ----------------
 
