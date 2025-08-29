@@ -352,7 +352,17 @@ public class TeacherServiceImpl implements TeacherService {
         teacher.setNationality(request.getNationality());
         teacher.setAadharNumber(normalizeEmptyToNull(request.getAadharNumber()));
         teacher.setProfileImageUrl(request.getProfileImageUrl());
+        teacher.setEmail(request.getEmail());
 
+        // Update User email if changed
+        User user = userRepository.findByUsername(teacher.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for teacher empId: " + empId));
+
+        if (!user.getEmail().equals(request.getEmail())) {
+            log.info("Updating user email from {} to {}", user.getEmail(), request.getEmail());
+            user.setEmail(request.getEmail());
+            userRepository.save(user);
+        }
 
         // Update Subjects
         if (request.getSubjectIds() != null && !request.getSubjectIds().isEmpty()) {
@@ -372,7 +382,7 @@ public class TeacherServiceImpl implements TeacherService {
             gradeName = grade.getName();
 
             // If section is also provided, validate section under grade
-            if (request.getSectionName() != null && !sectionName.isBlank()) {
+            if (request.getSectionName() != null && !request.getSectionName().isBlank()) {
                 Section section = sectionRepository.findByNameAndGrade(request.getSectionName(), grade)
                         .orElseThrow(() -> new ResourceNotFoundException("Section '" + request.getSectionName()
                                 + "' not found under Grade '" + request.getGradeName() + "'"));

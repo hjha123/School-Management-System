@@ -184,6 +184,16 @@ public class StudentServiceImpl implements StudentService {
         student.setBloodGroup(request.getBloodGroup());
         student.setNationality(request.getNationality());
 
+        // Update User email if changed
+        User user = userRepository.findByUsername(student.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found for studentId: " + studentId));
+
+        if (!user.getEmail().equals(request.getEmail())) {
+            log.info("Updating user email from {} to {}", user.getEmail(), request.getEmail());
+            user.setEmail(request.getEmail());
+            userRepository.save(user);
+        }
+
         // 🔹 Resolve Grade entity
         Grade grade = null;
         if (request.getGradeName() != null && !request.getGradeName().isBlank()) {

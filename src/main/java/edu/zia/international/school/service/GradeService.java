@@ -3,6 +3,7 @@ package edu.zia.international.school.service;
 
 import edu.zia.international.school.dto.grade.GradeRequest;
 import edu.zia.international.school.dto.grade.GradeResponse;
+import edu.zia.international.school.dto.grade.GradeStatsResponse;
 import edu.zia.international.school.dto.grade.GradeWithSectionsResponse;
 
 import java.util.List;
@@ -13,5 +14,5 @@ public interface GradeService {
     GradeResponse getGradeById(Long id);
     void deleteGradeByName(String gradeName);
     List<GradeWithSectionsResponse> getAllGradesWithSections();
-
+    GradeStatsResponse getGradeStats(Long id);
 }

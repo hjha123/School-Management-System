@@ -2,6 +2,7 @@ package edu.zia.international.school.controller;
 
 import edu.zia.international.school.dto.grade.GradeRequest;
 import edu.zia.international.school.dto.grade.GradeResponse;
+import edu.zia.international.school.dto.grade.GradeStatsResponse;
 import edu.zia.international.school.dto.grade.GradeWithSectionsResponse;
 import edu.zia.international.school.service.GradeService;
 import jakarta.validation.Valid;
@@ -57,6 +58,20 @@ public class GradeController {
         log.info("Fetching all grades with their sections");
         return ResponseEntity.ok(gradeService.getAllGradesWithSections());
     }
+
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<GradeStatsResponse> getGradeStats(@PathVariable Long id) {
+        log.info("Fetching grade stats for ID: {}", id);
+        try {
+            GradeStatsResponse response = gradeService.getGradeStats(id);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Error fetching grade stats: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
 
 }

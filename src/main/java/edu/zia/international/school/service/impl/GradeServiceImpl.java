@@ -2,10 +2,12 @@ package edu.zia.international.school.service.impl;
 
 import edu.zia.international.school.dto.grade.GradeRequest;
 import edu.zia.international.school.dto.grade.GradeResponse;
+import edu.zia.international.school.dto.grade.GradeStatsResponse;
 import edu.zia.international.school.dto.grade.GradeWithSectionsResponse;
 import edu.zia.international.school.dto.section.SimpleSectionResponse;
 import edu.zia.international.school.entity.Grade;
 import edu.zia.international.school.entity.Section;
+import edu.zia.international.school.entity.Student;
 import edu.zia.international.school.entity.Teacher;
 import edu.zia.international.school.exception.ResourceNotFoundException;
 import edu.zia.international.school.repository.GradeRepository;
@@ -27,7 +29,6 @@ import java.util.stream.Collectors;
 public class GradeServiceImpl implements GradeService {
 
     private final GradeRepository gradeRepository;
-
     private final TeacherRepository teacherRepository;
     private final StudentRepository studentRepository;
     private final SectionRepository sectionRepository;
@@ -75,31 +76,24 @@ public class GradeServiceImpl implements GradeService {
         log.info("Deleting grade and all related sections for grade: {}", gradeName);
 
         // 1. Disassociate teachers
-        for (Section section : grade.getSections()) {
-            for (Teacher teacher : section.getTeachers()) {
-                teacher.setSection(null);
-                teacher.setGrade(null);
-                teacherRepository.save(teacher);
-            }
-        }
-
-        List<Teacher> directTeachers = teacherRepository.findByGrade(grade);
-        for (Teacher teacher : directTeachers) {
+        List<Teacher> teachersInGrade = teacherRepository.findByGradeId(grade.getId());
+        for (Teacher teacher : teachersInGrade) {
             teacher.setGrade(null);
+            teacher.setSection(null);
             teacherRepository.save(teacher);
         }
 
-        // 2. Disassociate students
-        for (Section section : grade.getSections()) {
-            section.getStudents().forEach(student -> {
-                student.setSection(null);
-                student.setGrade(null);
-                studentRepository.save(student);
-            });
+        // 2. Disassociate students (all students in this grade)
+        List<Student> studentsInGrade = studentRepository.findByGradeId(grade.getId());
+        for (Student student : studentsInGrade) {
+            student.setGrade(null);
+            student.setSection(null);
+            studentRepository.save(student);
         }
 
         // 3. Delete sections
-        for (Section section : grade.getSections()) {
+        List<Section> sections = sectionRepository.findByGradeId(grade.getId());
+        for (Section section : sections) {
             log.info("Deleting section: {}", section.getName());
             sectionRepository.delete(section);
         }
@@ -108,8 +102,6 @@ public class GradeServiceImpl implements GradeService {
         gradeRepository.delete(grade);
         log.info("Deleted grade: {}", gradeName);
     }
-
-
 
     @Override
     public List<GradeWithSectionsResponse> getAllGradesWithSections() {
@@ -122,5 +114,23 @@ public class GradeServiceImpl implements GradeService {
         }).toList();
     }
 
+    @Override
+    public GradeStatsResponse getGradeStats(Long gradeId) {
+        try {
+            Grade grade = gradeRepository.findById(gradeId)
+                    .orElseThrow(() -> new RuntimeException("Grade not found with ID: " + gradeId));
 
+            long totalStudents = studentRepository.findByGradeId(gradeId).size();
+            long totalTeachers = teacherRepository.findByGradeId(gradeId).size();
+
+            log.info("Grade stats for {}: {} students, {} teachers",
+                    grade.getName(), totalStudents, totalTeachers);
+
+            return new GradeStatsResponse(grade.getName(), totalStudents, totalTeachers);
+
+        } catch (Exception e) {
+            log.error("Failed to fetch grade stats for ID {}: {}", gradeId, e.getMessage());
+            throw new RuntimeException("Unable to fetch grade stats. Please try again later.");
+        }
+    }
 }
