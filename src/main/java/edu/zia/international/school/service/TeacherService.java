@@ -19,5 +19,7 @@ public interface TeacherService {
     TeacherResponse getTeacherByUsername(String username);
     TeacherResponse partialUpdateByUsername(String username, PartialUpdateTeacherRequest request);
     CurrentUserResponse getEmpIdAndName(String username);
+    List<TeacherResponse> searchTeachers(Long gradeId, Long sectionId, String name, String empId, String teacherType);
+
 }
 

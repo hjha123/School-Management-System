@@ -19,6 +19,13 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     Optional<Teacher> findByEmpId(String empId);
     Optional<Teacher> findByUsername(String username);
     List<Teacher> findBySection(Section section);
+    @Query("SELECT t FROM Teacher t " +
+            "WHERE (:gradeId IS NULL OR t.grade.id = :gradeId) " +
+            "AND (:sectionId IS NULL OR t.section.id = :sectionId) " +
+            "AND (:name IS NULL OR LOWER(t.fullName) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+            "AND (:empId IS NULL OR t.empId = :empId) " +
+            "AND (:teacherType IS NULL OR LOWER(t.teacherType) = LOWER(:teacherType))")
+    List<Teacher> searchTeachers(Long gradeId, Long sectionId, String name, String empId, String teacherType);
 
 }
 

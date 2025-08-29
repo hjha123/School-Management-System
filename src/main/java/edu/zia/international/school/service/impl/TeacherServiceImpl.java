@@ -538,6 +538,38 @@ public class TeacherServiceImpl implements TeacherService {
         return res;
     }
 
+    @Override
+    public List<TeacherResponse> searchTeachers(Long gradeId, Long sectionId, String name, String empId, String teacherType) {
+        log.info("Executing searchTeachers with gradeId={}, sectionId={}, name={}, empId={}, teacherType={}",
+                gradeId, sectionId, name, empId, teacherType);
+
+        List<Teacher> teachers = teacherRepository.findAll();
+
+        // Apply filters in memory (or build JPA query if needed)
+        return teachers.stream()
+                .filter(t -> gradeId == null || (t.getGrade() != null && gradeId.equals(t.getGrade().getId())))
+                .filter(t -> sectionId == null || (t.getSection() != null && sectionId.equals(t.getSection().getId())))
+                .filter(t -> name == null || t.getFullName().toLowerCase().contains(name.toLowerCase()))
+                .filter(t -> empId == null || (t.getEmpId() != null && t.getEmpId().equalsIgnoreCase(empId)))
+                .filter(t -> teacherType == null || (t.getTeacherType() != null && t.getTeacherType().equalsIgnoreCase(teacherType)))
+                .map(t -> {
+                    TeacherResponse res = new TeacherResponse();
+                    BeanUtils.copyProperties(t, res);
+
+                    // Set subject names
+                    if (t.getSubjects() != null) {
+                        res.setSubjects(t.getSubjects().stream().map(Subject::getName).toList());
+                    }
+
+                    // Grade & Section names
+                    if (t.getGrade() != null) res.setGradeName(t.getGrade().getName());
+                    if (t.getSection() != null) res.setSectionName(t.getSection().getName());
+
+                    return res;
+                })
+                .collect(Collectors.toList());
+    }
+
 
     private void sendWelcomeEmail(String toEmail, String fullName, String username, String tempPassword, String empId) {
         String subject = "Welcome to ZIA International School";
