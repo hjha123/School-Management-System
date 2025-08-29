@@ -539,36 +539,60 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
-    public List<TeacherResponse> searchTeachers(Long gradeId, Long sectionId, String name, String empId, String teacherType) {
-        log.info("Executing searchTeachers with gradeId={}, sectionId={}, name={}, empId={}, teacherType={}",
-                gradeId, sectionId, name, empId, teacherType);
+    public List<TeacherResponse> searchTeachers(Long gradeId, String gradeName,
+                                                Long sectionId, String sectionName,
+                                                String name, String empId, String teacherType) {
 
-        List<Teacher> teachers = teacherRepository.findAll();
+        List<Teacher> teachers;
 
-        // Apply filters in memory (or build JPA query if needed)
+        if (gradeId != null && sectionId != null) {
+            teachers = teacherRepository.findByGradeIdAndSectionId(gradeId, sectionId);
+        } else if (gradeId != null) {
+            teachers = teacherRepository.findByGradeId(gradeId);
+        } else if (sectionId != null) {
+            teachers = teacherRepository.findBySectionId(sectionId);
+        } else if (gradeName != null && sectionName != null) {
+            teachers = teacherRepository.findByGradeNameAndSectionName(gradeName, sectionName);
+        } else if (gradeName != null) {
+            teachers = teacherRepository.findByGradeName(gradeName);
+        } else if (sectionName != null) {
+            teachers = teacherRepository.findBySectionName(sectionName);
+        } else {
+            teachers = teacherRepository.findAll();
+        }
+
+        // Apply in-memory filters
+        if (name != null && !name.isEmpty()) {
+            String lowerName = name.toLowerCase();
+            teachers = teachers.stream()
+                    .filter(t -> t.getFullName().toLowerCase().contains(lowerName))
+                    .toList();
+        }
+        if (empId != null && !empId.isEmpty()) {
+            teachers = teachers.stream()
+                    .filter(t -> t.getEmpId() != null && t.getEmpId().equalsIgnoreCase(empId))
+                    .toList();
+        }
+        if (teacherType != null && !teacherType.isEmpty()) {
+            teachers = teachers.stream()
+                    .filter(t -> t.getTeacherType() != null && t.getTeacherType().equalsIgnoreCase(teacherType))
+                    .toList();
+        }
+
+        // Map to response
         return teachers.stream()
-                .filter(t -> gradeId == null || (t.getGrade() != null && gradeId.equals(t.getGrade().getId())))
-                .filter(t -> sectionId == null || (t.getSection() != null && sectionId.equals(t.getSection().getId())))
-                .filter(t -> name == null || t.getFullName().toLowerCase().contains(name.toLowerCase()))
-                .filter(t -> empId == null || (t.getEmpId() != null && t.getEmpId().equalsIgnoreCase(empId)))
-                .filter(t -> teacherType == null || (t.getTeacherType() != null && t.getTeacherType().equalsIgnoreCase(teacherType)))
                 .map(t -> {
                     TeacherResponse res = new TeacherResponse();
                     BeanUtils.copyProperties(t, res);
-
-                    // Set subject names
-                    if (t.getSubjects() != null) {
-                        res.setSubjects(t.getSubjects().stream().map(Subject::getName).toList());
-                    }
-
-                    // Grade & Section names
+                    if (t.getSubjects() != null)
+                        res.setSubjects(t.getSubjects().stream().map(s -> s.getName()).toList());
                     if (t.getGrade() != null) res.setGradeName(t.getGrade().getName());
                     if (t.getSection() != null) res.setSectionName(t.getSection().getName());
-
                     return res;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
+
 
 
     private void sendWelcomeEmail(String toEmail, String fullName, String username, String tempPassword, String empId) {

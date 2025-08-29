@@ -109,30 +109,26 @@ public class TeacherController {
         return ResponseEntity.ok(teacherService.partialUpdateByUsername(username, request));
     }
 
-    @GetMapping("/myDetails")
-    @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<CurrentUserResponse> getMyDetails(Authentication authentication) {
-        String username = authentication.getName();
-        log.info("Fetching emp id & name for logged-in teacher: {}", username);
-        return ResponseEntity.ok(teacherService.getEmpIdAndName(username));
-    }
-
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<TeacherResponse>> searchTeachers(
             @RequestParam(required = false) Long gradeId,
             @RequestParam(required = false) Long sectionId,
+            @RequestParam(required = false) String gradeName,
+            @RequestParam(required = false) String sectionName,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String empId,
             @RequestParam(required = false) String teacherType) {
 
-        log.info("Searching teachers with filters - gradeId: {}, sectionId: {}, name: {}, empId: {}, teacherType: {}",
-                gradeId, sectionId, name, empId, teacherType);
+        log.info("Searching teachers with filters - gradeId: {}, gradeName: {}, sectionId: {}, sectionName: {}, name: {}, empId: {}, teacherType: {}",
+                gradeId, gradeName, sectionId, sectionName, name, empId, teacherType);
 
-        List<TeacherResponse> teachers = teacherService.searchTeachers(gradeId, sectionId, name, empId, teacherType);
+        List<TeacherResponse> teachers = teacherService.searchTeachers(
+                gradeId, gradeName, sectionId, sectionName, name, empId, teacherType
+        );
+
         return ResponseEntity.ok(teachers);
     }
-
 
 }
 

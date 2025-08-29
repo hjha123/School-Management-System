@@ -19,13 +19,29 @@ public interface TeacherRepository extends JpaRepository<Teacher, Long> {
     Optional<Teacher> findByEmpId(String empId);
     Optional<Teacher> findByUsername(String username);
     List<Teacher> findBySection(Section section);
-    @Query("SELECT t FROM Teacher t " +
-            "WHERE (:gradeId IS NULL OR t.grade.id = :gradeId) " +
-            "AND (:sectionId IS NULL OR t.section.id = :sectionId) " +
-            "AND (:name IS NULL OR LOWER(t.fullName) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-            "AND (:empId IS NULL OR t.empId = :empId) " +
-            "AND (:teacherType IS NULL OR LOWER(t.teacherType) = LOWER(:teacherType))")
-    List<Teacher> searchTeachers(Long gradeId, Long sectionId, String name, String empId, String teacherType);
+
+    // 🔹 By gradeId + sectionId
+    List<Teacher> findByGradeIdAndSectionId(Long gradeId, Long sectionId);
+
+    // 🔹 By gradeId only
+    List<Teacher> findByGradeId(Long gradeId);
+
+    // 🔹 By sectionId only
+    List<Teacher> findBySectionId(Long sectionId);
+
+    // 🔹 By gradeName + sectionName using JPQL
+    @Query("SELECT t FROM Teacher t WHERE t.grade.name = :gradeName AND t.section.name = :sectionName")
+    List<Teacher> findByGradeNameAndSectionName(@Param("gradeName") String gradeName,
+                                                @Param("sectionName") String sectionName);
+
+    // 🔹 By gradeName only
+    @Query("SELECT t FROM Teacher t WHERE t.grade.name = :gradeName")
+    List<Teacher> findByGradeName(@Param("gradeName") String gradeName);
+
+    // 🔹 By sectionName only
+    @Query("SELECT t FROM Teacher t WHERE t.section.name = :sectionName")
+    List<Teacher> findBySectionName(@Param("sectionName") String sectionName);
+
 
 }
 
