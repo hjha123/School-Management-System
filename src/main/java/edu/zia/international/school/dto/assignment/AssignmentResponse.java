@@ -21,6 +21,7 @@ public class AssignmentResponse {
     private String createdByTeacherId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String lastUpdatedBy;
     private List<String> attachments;
     private String status;
     private String adminRemarks;

@@ -34,13 +34,12 @@ public class Assignment {
 
     private String gradeName;
     private String sectionName;
-
-//    private String createdByTeacherId;
     private String createdByRole;
     private String createdByUserId;
     private String assignedTeacherId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String lastUpdatedBy;
 
     @OneToMany(mappedBy = "assignment", cascade = CascadeType.ALL)
     private List<AssignmentSubmission> submissions;

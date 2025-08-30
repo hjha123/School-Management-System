@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,6 +33,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     private final GradeRepository gradeRepository;
     private final SectionRepository sectionRepository;
     private final TeacherRepository teacherRepository;
+    private final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
     @Override
@@ -169,8 +171,8 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     @Transactional
     public AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request,
-                                               List<MultipartFile> files, String teacherId) {
-        logger.info("Updating assignment ID {} by teacher {}", id, teacherId);
+                                               List<MultipartFile> files, String userId) {
+        logger.info("Updating assignment ID {} by user {}", id, userId);
 
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> {
@@ -178,9 +180,13 @@ public class AssignmentServiceImpl implements AssignmentService {
                     return new ResourceNotFoundException("Assignment not found with id: " + id);
                 });
 
-        // Ensure only the creator can update
-        if (!assignment.getCreatedByUserId().equals(teacherId)) {
-            logger.error("Teacher {} attempted to update assignment {} created by another teacher", teacherId, id);
+        // Allow ADMIN or creator to update
+        boolean isAdmin = SecurityContextHolder.getContext().getAuthentication()
+                .getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+
+        if (!isAdmin && !assignment.getCreatedByUserId().equals(userId)) {
+            logger.error("User {} attempted to update assignment {} without permission", userId, id);
             throw new AccessDeniedException("You are not allowed to update this assignment");
         }
 
@@ -191,14 +197,34 @@ public class AssignmentServiceImpl implements AssignmentService {
             throw new IllegalArgumentException("Due date must be a future date");
         }
 
-
-        // Update fields
+        // Update basic fields
         if (request.getTitle() != null) assignment.setTitle(request.getTitle());
         if (request.getDescription() != null) assignment.setDescription(request.getDescription());
         if (request.getDueDate() != null) assignment.setDueDate(request.getDueDate());
-        if (request.getGradeId() != null) assignment.setGradeId(request.getGradeId());
-        if (request.getSectionId() != null) assignment.setSectionId(request.getSectionId());
         if (request.getTeacherId() != null) assignment.setAssignedTeacherId(request.getTeacherId());
+
+        // 🔹 Update grade & section properly
+        if (request.getGradeId() != null) {
+            Grade grade = gradeRepository.findById(request.getGradeId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Grade not found with ID: " + request.getGradeId()));
+            assignment.setGradeId(grade.getId());
+            assignment.setGradeName(grade.getName());
+
+            if (request.getSectionId() != null) {
+                Section section = sectionRepository.findById(request.getSectionId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Section not found with ID: " + request.getSectionId()
+                        ));
+
+                if (!section.getGrade().getId().equals(grade.getId())) {
+                    throw new IllegalArgumentException("Section " + section.getName() +
+                            " does not belong to Grade " + grade.getName());
+                }
+            } else {
+                assignment.setSectionId(0);
+                assignment.setSectionName(null);
+            }
+        }
 
         // Handle file uploads (append new files if any)
         if (files != null && !files.isEmpty()) {
@@ -224,12 +250,18 @@ public class AssignmentServiceImpl implements AssignmentService {
             assignment.setAttachments(fileUrls);
         }
 
+        // 🔹 Update status
         AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
         assignment.setStatus(status);
         assignment.setUpdatedAt(LocalDateTime.now());
+
+        // 🔹 Update lastUpdatedBy with full name
+        String fullName = fetchFullNameByUserId(userId, isAdmin);
+        assignment.setLastUpdatedBy(fullName);
+
         Assignment updated = assignmentRepository.save(assignment);
 
-        logger.info("Assignment ID {} updated successfully", updated.getId());
+        logger.info("Assignment ID {} updated successfully by {}", updated.getId(), fullName);
         return mapToResponse(updated);
     }
 
@@ -403,6 +435,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setDueDate(assignment.getDueDate());
         response.setCreatedAt(assignment.getCreatedAt());
         response.setUpdatedAt(assignment.getUpdatedAt());
+        response.setLastUpdatedBy(assignment.getLastUpdatedBy());
         response.setStatus(assignment.getStatus().name());
         response.setCreatedByTeacherId(assignment.getCreatedByUserId());
         response.setGradeName(assignment.getGradeName());
@@ -429,5 +462,21 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .feedback(submission.getFeedback())
                 .status(submission.getStatus().name())
                 .build();
+    }
+
+
+    /**
+     * Helper method to fetch user full name from Teacher/Admin repo
+     */
+    private String fetchFullNameByUserId(String userId, boolean isAdmin) {
+        if (isAdmin) {
+            return userRepository.findByUsername(userId)
+                    .map(User::getName)
+                    .orElse("Unknown Admin");
+        } else {
+            return teacherRepository.findByUsername(userId)
+                    .map(Teacher::getFullName)
+                    .orElse("Unknown Teacher");
+        }
     }
 }
