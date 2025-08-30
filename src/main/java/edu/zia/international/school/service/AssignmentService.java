@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface AssignmentService {
-    AssignmentResponse createAssignment(CreateAssignmentRequest request, List<MultipartFile> files, String teacherId);
+    AssignmentResponse createAssignmentAsTeacher(CreateAssignmentRequest request, List<MultipartFile> files, String teacherId);
     List<AssignmentResponse> getAssignmentsForTeacher(String teacherId);
     List<AssignmentResponse> getAssignmentsForStudent(long gradeId, long sectionId);
     List<AssignmentSubmissionResponse> getSubmissions(Long assignmentId);
@@ -14,10 +14,9 @@ public interface AssignmentService {
     AssignmentResponse getAssignmentById(Long id);
     void deleteAssignment(Long id);
     AssignmentResponse updateAssignment(Long id, UpdateAssignmentRequest request, List<MultipartFile> files, String teacherId);
-
     AssignmentResponse closeAssignment(Long id, String teacherId);
-
     List<AssignmentResponse> getAllAssignmentsAdmin();
-
     AssignmentResponse updateAdminRemarks(Long id, String adminRemarks);
+    AssignmentResponse createAssignmentAsAdmin(CreateAssignmentRequest request, List<MultipartFile> files, String adminId);
+
 }

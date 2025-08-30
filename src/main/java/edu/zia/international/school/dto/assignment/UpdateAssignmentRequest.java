@@ -18,5 +18,6 @@ public class UpdateAssignmentRequest {
     private Long gradeId;
     private Long sectionId;
     private AssignmentStatus status;
+    private String teacherId;
 }
 

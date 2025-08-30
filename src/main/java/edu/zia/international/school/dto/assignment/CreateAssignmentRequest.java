@@ -17,4 +17,5 @@ public class CreateAssignmentRequest {
     private long gradeId;
     private long sectionId;
     private AssignmentStatus status;
+    private String teacherId;
 }

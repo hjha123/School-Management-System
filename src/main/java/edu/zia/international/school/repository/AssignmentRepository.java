@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
-    List<Assignment> findByCreatedByTeacherId(String teacherId);
+    List<Assignment> findByCreatedByUserId(String teacherId);
     List<Assignment> findByGradeIdAndSectionId(Long gradeId, Long sectionId);
 }

@@ -109,6 +109,14 @@ public class TeacherController {
         return ResponseEntity.ok(teacherService.partialUpdateByUsername(username, request));
     }
 
+    @GetMapping("/myDetails")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<CurrentUserResponse> getMyDetails(Authentication authentication) {
+        String username = authentication.getName();
+        log.info("Fetching emp id & name for logged-in teacher: {}", username);
+        return ResponseEntity.ok(teacherService.getEmpIdAndName(username));
+    }
+
     @GetMapping("/search")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<List<TeacherResponse>> searchTeachers(

@@ -33,11 +33,11 @@ public class AssignmentController {
         String teacherId = authentication.getName();
         logger.info("Teacher {} creating assignment '{}'", teacherId, request.getTitle());
 
-        AssignmentResponse response = assignmentService.createAssignment(request, files, teacherId);
+        AssignmentResponse response = assignmentService.createAssignmentAsTeacher(request, files, teacherId);
         return ResponseEntity.ok(response);
     }
 
-    @PreAuthorize("hasRole('TEACHER')")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
     public ResponseEntity<AssignmentResponse> updateAssignment(
             @PathVariable Long id,
@@ -138,5 +138,18 @@ public class AssignmentController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping(value = "/admin", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
+    public ResponseEntity<AssignmentResponse> createAssignmentAsAdmin(
+            @RequestPart("request") CreateAssignmentRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files,
+            Authentication authentication) {
+
+        String adminId = authentication.getName();
+        logger.info("Admin {} creating assignment '{}'", adminId, request.getTitle());
+
+        AssignmentResponse response = assignmentService.createAssignmentAsAdmin(request, files, adminId);
+        return ResponseEntity.ok(response);
+    }
 
 }

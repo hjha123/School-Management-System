@@ -36,7 +36,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     @Override
     @Transactional
-    public AssignmentResponse createAssignment(CreateAssignmentRequest request, List<MultipartFile> files, String teacherId) {
+    public AssignmentResponse createAssignmentAsTeacher(CreateAssignmentRequest request, List<MultipartFile> files, String userId) {
 
         // 🔹 Resolve Grade
         Grade grade = null;
@@ -87,7 +87,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .sectionId(section != null ? section.getId() : 0)
                 .gradeName(gradeName)
                 .sectionName(sectionName)
-                .createdByTeacherId(teacherId)
+                .createdByRole("TEACHER")
+                .createdByUserId(userId)
                 .createdAt(LocalDateTime.now())
                 .attachments(fileUrls)
                 .status(status)
@@ -100,7 +101,7 @@ public class AssignmentServiceImpl implements AssignmentService {
     @Override
     public List<AssignmentResponse> getAssignmentsForTeacher(String teacherId) {
         logger.info("Fetching assignments for teacher {}", teacherId);
-        return assignmentRepository.findByCreatedByTeacherId(teacherId)
+        return assignmentRepository.findByCreatedByUserId(teacherId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -178,7 +179,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 });
 
         // Ensure only the creator can update
-        if (!assignment.getCreatedByTeacherId().equals(teacherId)) {
+        if (!assignment.getCreatedByUserId().equals(teacherId)) {
             logger.error("Teacher {} attempted to update assignment {} created by another teacher", teacherId, id);
             throw new AccessDeniedException("You are not allowed to update this assignment");
         }
@@ -197,6 +198,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         if (request.getDueDate() != null) assignment.setDueDate(request.getDueDate());
         if (request.getGradeId() != null) assignment.setGradeId(request.getGradeId());
         if (request.getSectionId() != null) assignment.setSectionId(request.getSectionId());
+        if (request.getTeacherId() != null) assignment.setAssignedTeacherId(request.getTeacherId());
 
         // Handle file uploads (append new files if any)
         if (files != null && !files.isEmpty()) {
@@ -237,7 +239,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         Assignment assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Assignment not found"));
 
-        if (!assignment.getCreatedByTeacherId().equals(teacherId)) {
+        if (!assignment.getCreatedByUserId().equals(teacherId)) {
             throw new AccessDeniedException("You are not allowed to close this assignment");
         }
 
@@ -254,9 +256,9 @@ public class AssignmentServiceImpl implements AssignmentService {
         return allAssignments.stream()
                 .map(a -> {
                     // Fetch teacher name by username
-                    String teacherName = teacherRepository.findByUsername(a.getCreatedByTeacherId())
+                    String teacherName = teacherRepository.findByUsername(a.getCreatedByUserId())
                             .map(Teacher::getFullName)
-                            .orElse(a.getCreatedByTeacherId());
+                            .orElse(a.getCreatedByUserId());
 
                     return AssignmentResponse.builder()
                             .id(a.getId())
@@ -300,7 +302,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .description(assignment.getDescription())
                 .gradeName(assignment.getGradeName())
                 .sectionName(assignment.getSectionName())
-                .createdByTeacherId(assignment.getCreatedByTeacherId())
+                .createdByTeacherId(assignment.getCreatedByUserId())
                 .createdAt(assignment.getCreatedAt())
                 .updatedAt(assignment.getUpdatedAt())
                 .status(assignment.getStatus().name())
@@ -308,6 +310,88 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .attachments(assignment.getAttachments())
                 .build();
     }
+
+    @Override
+    @Transactional
+    public AssignmentResponse createAssignmentAsAdmin(CreateAssignmentRequest request,
+                                                      List<MultipartFile> files,
+                                                      String adminId) {
+
+        // 🔹 Resolve Grade (optional)
+        Grade grade = null;
+        String gradeName;
+        if (request.getGradeId() > 0) {
+            grade = gradeRepository.findById(request.getGradeId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Grade not found with id: " + request.getGradeId()));
+            gradeName = grade.getName();
+        } else {
+            gradeName = null;
+        }
+
+        // 🔹 Resolve Section (optional, must belong to grade)
+        Section section = null;
+        String sectionName = null;
+        if (grade != null && request.getSectionId() > 0) {
+            section = sectionRepository.findById(request.getSectionId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Section not found with id: " + request.getSectionId() + " in grade " + gradeName));
+            sectionName = section.getName();
+        }
+
+        // 🔹 Resolve Teacher (optional, only if admin assigns directly to one teacher)
+        Teacher assignedTeacher = null;
+        String assignedTeacherId = null;
+        if (request.getTeacherId() != null && !request.getTeacherId().isBlank()) {
+            assignedTeacher = teacherRepository.findByEmpId(request.getTeacherId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Teacher not found with empId: " + request.getTeacherId()));
+            assignedTeacherId = assignedTeacher.getEmpId();
+        }
+
+        // 🔹 Handle File Uploads
+        List<String> fileUrls = new ArrayList<>();
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                try {
+                    String uploadDir = "uploads/assignments/";
+                    File dir = new File(uploadDir);
+                    if (!dir.exists()) dir.mkdirs();
+
+                    String filePath = uploadDir + UUID.randomUUID() + "_" + file.getOriginalFilename();
+                    file.transferTo(new File(filePath));
+                    fileUrls.add(filePath);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to store file " + file.getOriginalFilename(), e);
+                }
+            }
+        }
+
+        // 🔹 Default assignment status (if null, fallback to DRAFT)
+        AssignmentStatus status = request.getStatus() != null ? request.getStatus() : AssignmentStatus.DRAFT;
+
+        // 🔹 Build and Save Assignment
+        Assignment assignment = Assignment.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .dueDate(request.getDueDate())
+                .gradeId(grade != null ? grade.getId() : 0)
+                .sectionId(section != null ? section.getId() : 0)
+                .gradeName(gradeName)
+                .sectionName(sectionName)
+                .createdByRole("ADMIN")
+                .createdByUserId(adminId)
+                .assignedTeacherId(assignedTeacherId)
+                .createdAt(LocalDateTime.now())
+                .attachments(fileUrls)
+                .status(status)
+                .build();
+
+        Assignment saved = assignmentRepository.save(assignment);
+
+        return mapToResponse(saved);
+    }
+
 
 
 
@@ -320,7 +404,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         response.setCreatedAt(assignment.getCreatedAt());
         response.setUpdatedAt(assignment.getUpdatedAt());
         response.setStatus(assignment.getStatus().name());
-        response.setCreatedByTeacherId(assignment.getCreatedByTeacherId());
+        response.setCreatedByTeacherId(assignment.getCreatedByUserId());
         response.setGradeName(assignment.getGradeName());
         response.setSectionName(assignment.getSectionName());
         response.setAdminRemarks(assignment.getAdminRemarks());
