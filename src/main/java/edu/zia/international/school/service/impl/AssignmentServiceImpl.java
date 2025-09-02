@@ -29,10 +29,12 @@ import java.util.stream.Collectors;
 public class AssignmentServiceImpl implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
+    private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final AssignmentSubmissionRepository submissionRepository;
     private final GradeRepository gradeRepository;
     private final SectionRepository sectionRepository;
     private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private static final Logger logger = LoggerFactory.getLogger(AssignmentServiceImpl.class);
 
@@ -97,6 +99,24 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .build();
 
         Assignment saved = assignmentRepository.save(assignment);
+
+        // 🔹 If assignment is published, map to students
+        if (status == AssignmentStatus.PUBLISHED && grade != null && section != null) {
+            List<Student> students = studentRepository.findByGradeNameAndSectionName(gradeName, sectionName);
+
+            List<AssignmentSubmission> submissions = students.stream()
+                    .map(student -> AssignmentSubmission.builder()
+                            .assignment(saved)
+                            .studentId(student.getStudentId())
+                            .submissionStatus(SubmissionStatus.PENDING)
+                            .submittedAt(null)
+                            .fileUrl(null)
+                            .build())
+                    .toList();
+
+            assignmentSubmissionRepository.saveAll(submissions);
+            saved.setSubmissions(submissions);
+        }
         return mapToResponse(saved);
     }
 
@@ -128,21 +148,51 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    public AssignmentSubmissionResponse updateSubmissionStatus(Long assignmentId, String studentId, Double marks, String feedback) {
-        logger.info("Updating submission status for assignment {} student {}", assignmentId, studentId);
-        AssignmentSubmission submission = submissionRepository.findByAssignmentIdAndStudentId(assignmentId, studentId);
-        if (submission == null) {
-            throw new RuntimeException("Submission not found for student " + studentId);
+    @Transactional
+    public AssignmentSubmissionResponse updateSubmissionStatus(Long assignmentId, String studentId,
+                                                               SubmissionStatus submissionStatus, Double marks, String feedback) {
+        logger.info("Updating submission status for assignment {} and student {}", assignmentId, studentId);
+
+        // 1. Find submission
+        AssignmentSubmission submission = submissionRepository
+                .findByAssignmentIdAndStudentId(assignmentId, studentId)
+                .orElseThrow(() -> {
+                    logger.error("Submission not found for assignment {} student {}", assignmentId, studentId);
+                    return new ResourceNotFoundException("Submission not found for this assignment and student");
+                });
+
+        // 2. Update fields
+        if (marks != null) {
+            submission.setMarks(marks);
+        }
+        if (feedback != null && !feedback.trim().isEmpty()) {
+            submission.setFeedback(feedback.trim());
         }
 
-        submission.setMarks(marks);
-        submission.setFeedback(feedback);
-        submission.setStatus(SubmissionStatus.GRADED);
+        // Teacher updating marks/feedback implies it's evaluated
+        submission.setSubmissionStatus(submissionStatus);
 
-        AssignmentSubmission updated = submissionRepository.save(submission);
-        logger.info("Submission updated successfully for student {}", studentId);
-        return mapSubmissionToResponse(updated);
+        // 👇 Update submittedAt timestamp
+        submission.setSubmittedAt(LocalDateTime.now());
+
+        AssignmentSubmission saved = submissionRepository.save(submission);
+
+        logger.info("Successfully updated submission {} for assignment {} student {}", saved.getId(), assignmentId, studentId);
+
+        // 3. Convert to response
+        return AssignmentSubmissionResponse.builder()
+                .id(saved.getId())
+                .assignmentId(saved.getAssignment().getId())
+                .studentId(saved.getStudentId())
+                .fileUrl(saved.getFileUrl())
+                .textAnswer(saved.getTextAnswer())
+                .marks(saved.getMarks())
+                .feedback(saved.getFeedback())
+                .submissionStatus(saved.getSubmissionStatus())
+                .submittedAt(saved.getSubmittedAt())
+                .build();
     }
+
 
     @Override
     public AssignmentResponse getAssignmentById(Long id) {
@@ -220,6 +270,8 @@ public class AssignmentServiceImpl implements AssignmentService {
                     throw new IllegalArgumentException("Section " + section.getName() +
                             " does not belong to Grade " + grade.getName());
                 }
+                assignment.setSectionId(section.getId());
+                assignment.setSectionName(section.getName());
             } else {
                 assignment.setSectionId(0);
                 assignment.setSectionName(null);
@@ -261,9 +313,31 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         Assignment updated = assignmentRepository.save(assignment);
 
+        // 🔹 If assignment is published → create mappings for all students in grade/section
+        if (status == AssignmentStatus.PUBLISHED) {
+            List<Student> students;
+            if (updated.getSectionId() != 0) {
+                students = studentRepository.findByGradeIdAndSectionId(updated.getGradeId(), updated.getSectionId());
+            } else {
+                students = studentRepository.findByGradeId(updated.getGradeId());
+            }
+
+            List<AssignmentSubmission> mappings = students.stream()
+                    .map(student -> AssignmentSubmission.builder()
+                            .assignment(updated)
+                            .studentId(student.getStudentId())
+                            .submissionStatus(SubmissionStatus.PENDING)
+                            .build())
+                    .collect(Collectors.toList());
+
+            assignmentSubmissionRepository.saveAll(mappings);
+            logger.info("Mapped assignment {} to {} students after update", updated.getId(), students.size());
+        }
+
         logger.info("Assignment ID {} updated successfully by {}", updated.getId(), fullName);
         return mapToResponse(updated);
     }
+
 
     @Override
     @Transactional
@@ -421,11 +495,26 @@ public class AssignmentServiceImpl implements AssignmentService {
 
         Assignment saved = assignmentRepository.save(assignment);
 
+        // 🔹 If assignment is published, map to students
+        if (status == AssignmentStatus.PUBLISHED && grade != null && section != null) {
+            List<Student> students = studentRepository.findByGradeNameAndSectionName(gradeName, sectionName);
+
+            List<AssignmentSubmission> submissions = students.stream()
+                    .map(student -> AssignmentSubmission.builder()
+                            .assignment(saved)
+                            .studentId(student.getStudentId())
+                            .submissionStatus(SubmissionStatus.PENDING)
+                            .submittedAt(null)
+                            .fileUrl(null)
+                            .build())
+                    .toList();
+
+            assignmentSubmissionRepository.saveAll(submissions);
+            saved.setSubmissions(submissions);
+        }
+
         return mapToResponse(saved);
     }
-
-
-
 
     private AssignmentResponse mapToResponse(Assignment assignment) {
         AssignmentResponse response = new AssignmentResponse();
@@ -460,7 +549,7 @@ public class AssignmentServiceImpl implements AssignmentService {
                 .textAnswer(submission.getTextAnswer())
                 .marks(submission.getMarks())
                 .feedback(submission.getFeedback())
-                .status(submission.getStatus().name())
+                .submissionStatus(submission.getSubmissionStatus())
                 .build();
     }
 

@@ -96,7 +96,8 @@ public class AssignmentController {
             @PathVariable String studentId,
             @RequestBody SubmissionUpdateRequest request) {
         logger.info("Updating submission for assignment {} student {}", assignmentId, studentId);
-        return ResponseEntity.ok(assignmentService.updateSubmissionStatus(assignmentId, studentId, request.getMarks(), request.getFeedback()));
+        return ResponseEntity.ok(assignmentService.updateSubmissionStatus(assignmentId, studentId, request.getSubmissionStatus(),
+                request.getMarks(), request.getFeedback()));
     }
 
     @DeleteMapping("/{id}")

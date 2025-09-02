@@ -37,5 +37,5 @@ public class AssignmentSubmission {
     private String feedback;
 
     @Enumerated(EnumType.STRING)
-    private SubmissionStatus status = SubmissionStatus.NOT_SUBMITTED;
+    private SubmissionStatus submissionStatus;
 }

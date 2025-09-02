@@ -1,5 +1,6 @@
 package edu.zia.international.school.dto.assignment;
 
+import edu.zia.international.school.enums.SubmissionStatus;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -10,11 +11,12 @@ import java.time.LocalDateTime;
 @Builder
 public class AssignmentSubmissionResponse {
     private Long id;
+    private Long assignmentId;
     private String studentId;
-    private LocalDateTime submittedAt;
     private String fileUrl;
     private String textAnswer;
     private Double marks;
     private String feedback;
-    private String status;
+    private SubmissionStatus submissionStatus;
+    private LocalDateTime submittedAt;
 }
